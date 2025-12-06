@@ -418,7 +418,36 @@ app.delete("/posts/:id/like", async (req, res) => {
         console.error("DELETE /posts/:id/like", error);
         return res.status(500).json({ error: "Internal server error" });
     };
-})
+});
+
+// Save a Post
+app.post("/posts/:id/save", async (req, res) => {
+    try {
+        const authUser = await getAuthUser(req);
+        if(!authUser) {
+            return res.status(401).json({ error: "Not authenticated" });
+        };
+
+        const postId = req.params.id;
+
+        // Check if post exists
+        const post = await prisma.post.findUnique({ where: { id: postId } });
+        if(!post) return res.status(404).json({ error: "Post not found" });
+
+        await prisma.save.upsert({
+            where: {
+                userId_postId: { userId: authUser.id, postId },
+            },
+                update: {},
+                create: { userId: authUser.id, postId},
+        });
+
+        return res.status(204).end();
+    } catch (error) {
+        console.error("POST /posts/:id/save", error);
+        return res.status(500).json({ error: "Internal server error" });
+    };
+});
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
