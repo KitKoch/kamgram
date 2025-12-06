@@ -371,6 +371,55 @@ app.get("/posts/:id", async(req, res) => {
     }
 });
 
+// Like a Post
+app.post("/posts/:id/like", async (req, res) => {
+    try {
+        const authUser = await getAuthUser(req);
+        if(!authUser) {
+            return res.status(401).json( {error: "Not authenticated"} );
+        };
+
+        const postId = req.params.id;
+
+        //Ensure post exists
+        const post = await prisma.post.findUnique({ where: { id: postId } });
+        if(!post) return res.status(404).json({ error: "Post not found"});
+
+        await prisma.like.upsert({
+            where: {
+                userId_postId: { userId: authUser.id, postId },
+            },
+            update: {},
+            create: { userId: authUser.id, postId },
+        });
+
+        return res.status(204).end();
+    } catch(error) {
+        console.error("POST /posts/:id/like", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// Delete Liked Post (Hard Delete)
+app.delete("/posts/:id/like", async (req, res) => {
+    try {
+        const authUser = await getAuthUser(req);
+        if(!authUser) {
+            return res.status(401).json({ error: "Not authenticated" });
+        };
+
+        const postId = req.params.id;
+
+        await prisma.like.deleteMany({
+            where: { userId: authUser.id, postId },
+        });
+        return res.status(204).end();
+    } catch (error) {
+        console.error("DELETE /posts/:id/like", error);
+        return res.status(500).json({ error: "Internal server error" });
+    };
+})
+
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
     console.log(`kamgram backend listening on http://localhost:${PORT}`);
