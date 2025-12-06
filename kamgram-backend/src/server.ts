@@ -449,6 +449,24 @@ app.post("/posts/:id/save", async (req, res) => {
     };
 });
 
+// Delete a Saved Post
+app.delete("/posts/:id/save", async (req, res) => {
+    try {
+        const authUser = await getAuthUser(req);
+        if(!authUser) return res.status(401).json({ error: "Not authenticated" });
+
+        const postId = req.params.id;
+        await prisma.save.deleteMany({
+            where: { userId: authUser.id, postId },
+        });
+
+        return res.status(204).end();
+    } catch (error) {
+        console.error("DELETE /posts/:id/save", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
     console.log(`kamgram backend listening on http://localhost:${PORT}`);
