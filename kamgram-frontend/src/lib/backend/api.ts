@@ -1,0 +1,137 @@
+import { INewUser, IUser, INewPost, IBackendPost } from "@/types";
+
+const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
+
+// Register =========================================================================================================================
+export async function createUserAccountBackend(user: INewUser): Promise<IUser> {
+    const res = await fetch(`${API_URL}/auth/register`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(user),
+    });
+
+    if(!res.ok) {
+        //Later parse JSON error message here
+        throw new Error("Failed to create user");
+    };
+
+    const data = await res.json();
+    return data.user as IUser;
+}
+
+// Login ============================================================================================================================
+export type SignInPayload = {
+    emailOrUsername: string;
+    password: string;
+};
+
+export async function signInBackend(payload: SignInPayload): Promise<IUser> {
+    const res = await fetch(`${API_URL}/auth/login`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(payload),
+    });
+
+    if(!res.ok) {
+        //Later you can parse JSON error and show better message
+        throw new Error("Failed to login");
+    };
+
+    const data = await res.json();
+    return data.user as IUser;
+};
+
+// Get Current User =================================================================================================================
+export async function getCurrentUserBackend(): Promise<IUser | null> {
+    const res = await fetch(`${API_URL}/auth/me`, {
+        method: "GET",
+        credentials: "include",
+    });
+
+    if(res.status == 401) {
+        return null;
+    };
+
+    if(!res.ok) {
+        throw new Error("Failed to fetch current user");
+    };
+
+    const data = await res.json();
+    return data.user as IUser;
+};
+
+// Logout ===========================================================================================================================
+export async function signOutBackend(): Promise<void> {
+    const res = await fetch(`${API_URL}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+    });
+
+    if(!res.ok && res.status !== 204) {
+        throw new Error("Failed to sign out");
+    };
+};
+
+// Create Post ======================================================================================================================
+export async function createPostBackend(post: INewPost): Promise<IBackendPost> {
+    const res = await fetch(`${API_URL}/posts`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+            caption: post.caption,
+            location: post.location ?? "",
+            tags: post.tags ?? ""
+            // image/file will be handled later when we do uploads
+        }),
+    });
+
+    if(!res.ok) {
+        throw new Error("Failed to create post");
+    };
+
+    const data = await res.json();
+    return data.post as IBackendPost;
+};
+
+// Recent Posts =====================================================================================================================
+export async function getRecentPostBackend(): Promise<IBackendPost[]> {
+    const res = await fetch(`${API_URL}/posts/recent?limit=20`, {
+        method: "GET",
+        credentials: "include",
+    });
+
+    if(!res.ok) {
+        throw new Error("Failed to fetch recent posts");
+    };
+
+    const data = await res.json();
+    return data.posts as IBackendPost[];
+};
+
+// Get Post by ID ===================================================================================================================
+export async function getPostByIdBackEnd(postId: string): Promise<IBackendPost> {
+    const res = await fetch(`${API_URL}/posts/${postId}`, {
+        method: "GET",
+        credentials: "include",
+    });
+
+    if(res.status === 404) {
+        throw new Error("Post not found");
+    }
+
+    if(!res.ok) {
+        throw new Error("Failed to get post");
+    };
+
+    const data = await res.json();
+    return data.post as IBackendPost;
+}

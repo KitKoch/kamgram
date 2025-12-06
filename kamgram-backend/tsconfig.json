@@ -1,0 +1,50 @@
+{
+  // Visit https://aka.ms/tsconfig to read more about this file
+  "compilerOptions": {
+    // File Layout
+    // Where TS reads from & writes to
+    "rootDir": "src",
+    "outDir": "dist",
+
+    // Target Environment Settings
+    "module": "commonjs",
+    "target": "ES2020",
+
+    // Node types
+    "lib": ["esnext"],
+    "types": ["node"],
+    // and npm install -D @types/node
+
+    // Other Outputs
+    // "declaration": true,
+    // "declarationMap": true,
+
+    // Stricter Typechecking Options
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+
+    // Style Options
+    // "noImplicitReturns": true,
+    // "noImplicitOverride": true,
+    // "noUnusedLocals": true,
+    // "noUnusedParameters": true,
+    // "noFallthroughCasesInSwitch": true,
+    // "noPropertyAccessFromIndexSignature": true,
+
+    // Performance / misc
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "esModuleInterop": true, 
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "node",
+
+    // Recommended Options
+    // "jsx": "react-jsx",
+    // "verbatimModuleSyntax": true,
+    // "isolatedModules": true,
+    // "noUncheckedSideEffectImports": true,
+    // "moduleDetection": "force",
+  },
+  "include": ["src"]
+}
