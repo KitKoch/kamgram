@@ -306,13 +306,19 @@ app.post("/posts", async (req, res) => {
 // Get Recent Posts
 app.get("/posts/recent", async (req, res) => {
     try {
+        const authUser = await getAuthUser(req);
         const limitParam = req.query.limit as string | undefined;
         const limit = limitParam ? parseInt(limitParam, 10) : 20;
 
         const posts = await prisma.post.findMany({
             orderBy: { createdAt: "desc" },
             take: limit,
-            include: { user: true },
+            include: { 
+                user: true,
+                likes: authUser ?  { where: { userId: authUser.id } } : false,
+                saves: authUser ? { where: { userId: authUser.id } } : false,
+                _count: { select: { likes: true, saves: true} },
+            },
         });
 
         const mapped = posts.map<PostDTO>((p) => {
@@ -332,6 +338,10 @@ app.get("/posts/recent", async (req, res) => {
                     imageUrl: p.user.imageUrl ?? "",
                     bio: p.user.bio ?? "",
                 },
+                isLikedByMe: authUser ? p.likes.length > 0 : false,
+                isSavedByMe: authUser ? p.saves.length > 0 : false,
+                likeCount: p._count.likes,
+                saveCount: p._count.saves,
             };
         });
 
