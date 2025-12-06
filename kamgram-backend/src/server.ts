@@ -94,6 +94,14 @@ app.get("/auth/me", async (req, res) => {
             return res.status(401).json({ error: "User not found" });
         };
 
+        // UI used to expect Appwrite style "saved post"
+        // Not a mimic of that yet, but this should give backend
+        // capable of giving the data for now
+        const saves = await prisma.save.findMany({
+            where: { userId: existing.id },
+            select: { postId: true },
+        })
+
         const user: UserDTO = {
             id: existing?.id,
             name: existing?.name,
@@ -103,7 +111,10 @@ app.get("/auth/me", async (req, res) => {
             bio: existing?.bio,
         };
         
-        return res.json({ user });
+        return res.json({ 
+            user,
+            savedPostIds: saves.map(s => s.postId), //simplied version of retrieving for now 
+        });
     } catch (error) {
         console.error("Error in /auth/me:", error);
         return res.status(500).json({ error: "Internal server error" });
