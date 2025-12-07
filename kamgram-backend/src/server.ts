@@ -7,6 +7,7 @@ import jwt from "jsonwebtoken";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { NewUser, UserDTO, PostDTO } from "./types";
+import multer from "multer";
 
 const app = express();
 
@@ -252,10 +253,11 @@ app.post("/posts", async (req, res) => {
             return res.status(401).json({ error: "Not authenticated" });
         };
 
-        const { caption, location, tags } = req.body as {
+        const { caption, location, tags, imageUrl } = req.body as {
             caption?: string;
             location?: string;
             tags?: string;
+            imageUrl?: string;
         };
 
         if(!caption) {
@@ -266,13 +268,14 @@ app.post("/posts", async (req, res) => {
         const created = await prisma.post.create({
             data: {
                 caption,
-                imageUrl: "",
+                imageUrl: imageUrl ?? "",
                 location: location || "",
                 tags: tags || "",
                 userId: authUser.id,
             },
             include: {
                 user: true,
+                _count: { select: { likes: true, saves: true }},
             },
         });
 
@@ -294,6 +297,10 @@ app.post("/posts", async (req, res) => {
                 imageUrl: created.user.imageUrl ?? "",
                 bio: created.user.bio ?? "",
             },
+            likeCount: created._count.likes,
+            saveCount: created._count.saves,
+            isLikedByMe: false,
+            isSavedByMe: false,
         };
 
         return res.status(201).json({ post });
@@ -338,10 +345,10 @@ app.get("/posts/recent", async (req, res) => {
                     imageUrl: p.user.imageUrl ?? "",
                     bio: p.user.bio ?? "",
                 },
-                isLikedByMe: authUser ? p.likes.length > 0 : false,
-                isSavedByMe: authUser ? p.saves.length > 0 : false,
                 likeCount: p._count.likes,
                 saveCount: p._count.saves,
+                isLikedByMe: authUser ? p.likes.length > 0 : false,
+                isSavedByMe: authUser ? p.saves.length > 0 : false,
             };
         });
 
@@ -355,11 +362,19 @@ app.get("/posts/recent", async (req, res) => {
 // Get a Single Post
 app.get("/posts/:id", async(req, res) => {
     try {
+        const authUser = await getAuthUser(req);
+        if(!authUser) return res.status(401).json({ error: "Not authenticated" });
+
         const { id } = req.params;
 
         const p = await prisma.post.findUnique({
             where: { id },
-            include: { user: true },
+            include: { 
+                user: true,
+                likes: authUser ? { where: { userId: authUser.id }} : false,
+                saves: authUser ? { where: { userId: authUser.id }} : false,
+                _count: { select: { likes: true, saves: true }},
+            },
         });
 
         if(!p) {
@@ -383,13 +398,17 @@ app.get("/posts/:id", async(req, res) => {
                 imageUrl: p.user.imageUrl ?? "",
                 bio: p.user.bio ?? "",
             },
+            likeCount: p._count.likes,
+            saveCount: p._count.saves,
+            isLikedByMe: authUser ? p.likes.length > 0 : false,
+            isSavedByMe: authUser ? p.saves.length > 0 : false,
         };
 
         return res.json({ post });
     } catch (error) {
         console.error("Error in GET /posts/:id :", error);
         return res.status(500).json({ error: "Internal server error" });
-    }
+    };
 });
 
 // Like a Post
@@ -486,6 +505,25 @@ app.delete("/posts/:id/save", async (req, res) => {
         console.error("DELETE /posts/:id/save", error);
         return res.status(500).json({ error: "Internal server error" });
     }
+});
+
+// Static file hosting for upload
+app.use("/uploads", express.static("uploads"));
+
+// Upload route
+const storage = multer.diskStorage({
+    destination: "uploads/",
+    filename: (_req, file, cb) => {
+        const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        cb(null, unique + "-" + file.originalname);
+    },
+});
+const upload = multer({ storage });
+app.post("/uploads", upload.single("file"), (req, res) => {
+    if(!req.file) return res.status(400).json({ error: "No file uploaded"});
+
+    const url = `http://localhost:4000/uploads/${req.file.filename}`;
+    return res.status(201).json({ url });
 });
 
 const PORT = process.env.PORT || 4000;
