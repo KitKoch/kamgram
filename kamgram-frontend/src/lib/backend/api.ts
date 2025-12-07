@@ -80,17 +80,22 @@ export async function signOutBackend(): Promise<void> {
 
 // Create Post ======================================================================================================================
 export async function createPostBackend(post: INewPost): Promise<IBackendPost> {
+    let imageUrl = "";
+
+    // INewPost has file: File[]
+    if(post.file && post.file.length > 0) {
+        imageUrl = await uploadFileBackend(post.file[0]);
+    };
+    
     const res = await fetch(`${API_URL}/posts`, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
             caption: post.caption,
             location: post.location ?? "",
-            tags: post.tags ?? ""
-            // image/file will be handled later when we do uploads
+            tags: post.tags ?? "",
+            imageUrl,
         }),
     });
 
