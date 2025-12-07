@@ -504,23 +504,26 @@ app.delete("/posts/:id/save", async (req, res) => {
     } catch (error) {
         console.error("DELETE /posts/:id/save", error);
         return res.status(500).json({ error: "Internal server error" });
-    }
+    };
 });
 
 // Static file hosting for upload
-app.use("/uploads", express.static("uploads"));
+// Any file in /uploads is accessible at http://localhost:4000/uploads/<filename>
+app.use("/uploads", express.static("uploads")); 
 
 // Upload route
 const storage = multer.diskStorage({
     destination: "uploads/",
     filename: (_req, file, cb) => {
         const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        cb(null, unique + "-" + file.originalname);
+        cb(null, `${unique}-${file.originalname}`);
     },
 });
 const upload = multer({ storage });
 app.post("/uploads", upload.single("file"), (req, res) => {
-    if(!req.file) return res.status(400).json({ error: "No file uploaded"});
+    if(!req.file) { 
+        return res.status(400).json({ error: "No file uploaded"}); 
+    };
 
     const url = `http://localhost:4000/uploads/${req.file.filename}`;
     return res.status(201).json({ url });

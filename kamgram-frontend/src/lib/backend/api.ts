@@ -135,3 +135,22 @@ export async function getPostByIdBackEnd(postId: string): Promise<IBackendPost> 
     const data = await res.json();
     return data.post as IBackendPost;
 }
+
+// File upload
+export async function uploadFileBackend(file: File): Promise<string> {
+    const form = new FormData();
+    form.append("file", file);
+
+    const res = await fetch(`${API_URL}/uploads`, {
+        method: "POST",
+        body: form,
+        credentials: "include",
+    });
+
+    if(!res.ok) {
+        throw new Error("Failed to upload file");
+    };
+
+    const data = await res.json();
+    return data.url as string;
+}
