@@ -68,8 +68,8 @@ async function getAuthUser(req: express.Request) {
         return user;
     } catch {
         return null;
-    }
-}
+    };
+};
 
 // Current User
 app.get("/auth/me", async (req, res) => {
@@ -245,6 +245,7 @@ app.post("/auth/logout", (req, res) => {
     return res.status(204).end();
 });
 
+// POST ===================================================================================================================================================
 // Create a Post
 app.post("/posts", async (req, res) => {
     try {
@@ -307,7 +308,7 @@ app.post("/posts", async (req, res) => {
     } catch (error) {
         console.error("Error in POST /posts:", error);
         return res.status(500).json({ error: "Internal server error" });
-    }
+    };
 });
 
 // Update a Post
@@ -318,7 +319,7 @@ app.patch("/posts/:id", async (req, res) => {
 
         const postId = req.params.id;
 
-        //Check if post exists
+        // Check if post exists
         const existing = await prisma.post.findUnique({
             where: { id: postId },
         });
@@ -381,8 +382,10 @@ app.patch("/posts/:id", async (req, res) => {
     } catch(error) {
         console.error("Error in PATCH /posts/:id:", error);
         return res.status(500).json({ error: "Internal Server Error"});
-    }
-})
+    };
+});
+
+
 
 // Get Recent Posts
 app.get("/posts/recent", async (req, res) => {
@@ -430,6 +433,41 @@ app.get("/posts/recent", async (req, res) => {
     } catch (error) {
         console.error("Error in GET /posts/recent:", error);
         return res.status(500).json({ error: "Internal server error" });
+    };
+});
+
+// Delete a Post
+app.delete("/posts/:id", async(req, res) => {
+    try {
+        const authUser = await getAuthUser(req);
+        if(!authUser) return res.status(401).json({ error: "Not authenticated"});
+
+        // Get post Id
+        const postId = req.params.id;
+
+        // Check if post exists
+        const existing = await prisma.post.findUnique({
+            where: { id: postId },
+        });
+        if(!existing) {
+            return res.status(404).json({ error: "Post not found"});
+        };
+
+        //Check ownership
+        if(existing.userId !== authUser.id) {
+            return res.status(403).json({ error: "Not allowed"});
+        };
+
+        // Clean relations first (with like and save)
+        await prisma.like.deleteMany({ where: { postId } });
+        await prisma.save.deleteMany({ where: { postId } });
+
+        // Delete post
+        await prisma.post.delete({ where: { id: postId } });
+        return res.status(204).end();
+    } catch(error) {
+        console.error("Error in DELETE /posts/:id", error);
+        return res.status(500).json({ error: "Internal server error"});
     };
 });
 
@@ -485,6 +523,7 @@ app.get("/posts/:id", async(req, res) => {
     };
 });
 
+// LIKE ===================================================================================================================================================
 // Like a Post
 app.post("/posts/:id/like", async (req, res) => {
     try {
@@ -534,6 +573,7 @@ app.delete("/posts/:id/like", async (req, res) => {
     };
 });
 
+// SAVE ===================================================================================================================================================
 // Save a Post
 app.post("/posts/:id/save", async (req, res) => {
     try {
@@ -581,6 +621,7 @@ app.delete("/posts/:id/save", async (req, res) => {
     };
 });
 
+// FILE UPLOAD ============================================================================================================================================
 // Static file hosting for upload
 // Any file in /uploads is accessible at http://localhost:4000/uploads/<filename>
 app.use("/uploads", express.static("uploads")); 
