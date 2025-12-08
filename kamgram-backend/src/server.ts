@@ -286,6 +286,223 @@ app.patch("/users/me", async (req, res) => {
 });
 
 // POST ===================================================================================================================================================
+// Get Recent Posts
+app.get("/posts/recent", async (req, res) => {
+    try {
+        const authUser = await getAuthUser(req);
+        const limitParam = req.query.limit as string | undefined;
+        const limit = limitParam ? parseInt(limitParam, 10) : 20;
+
+        const posts = await prisma.post.findMany({
+            orderBy: { createdAt: "desc" },
+            take: limit,
+            include: { 
+                user: true,
+                likes: authUser ?  { where: { userId: authUser.id } } : false,
+                saves: authUser ? { where: { userId: authUser.id } } : false,
+                _count: { select: { likes: true, saves: true} },
+            },
+        });
+
+        const mapped = posts.map<PostDTO>((p) => {
+            const tagList = p.tags ? p.tags.replace(/ /g, "").split(",").filter(Boolean) : [];
+            return {
+                id: p.id,
+                caption: p.caption,
+                imageUrl: p.imageUrl,
+                location: p.location,
+                tags: tagList,
+                createdAt: p.createdAt.toISOString(),
+                creator: {
+                    id: p.user.id,
+                    name: p.user.name,
+                    username: p.user.username,
+                    email: p.user.email,
+                    imageUrl: p.user.imageUrl ?? "",
+                    bio: p.user.bio ?? "",
+                },
+                likeCount: p._count.likes,
+                saveCount: p._count.saves,
+                isLikedByMe: authUser ? p.likes.length > 0 : false,
+                isSavedByMe: authUser ? p.saves.length > 0 : false,
+            };
+        });
+
+        return res.json({ posts: mapped });
+    } catch (error) {
+        console.error("Error in GET /posts/recent:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    };
+});
+
+// Search Posts
+app.get("/posts/search", async (req, res) => {
+    try {
+        const authUser = await getAuthUser(req);
+        if(!authUser) return res.status(401).json({ error: "Not authenticated" });
+        
+        const q = (req.query.q as string | undefined)?.trim(); //takes q from query string and trim for search
+        if(!q) {
+            return res.json({ posts: [] }); // No usable search term so empty result
+        };
+
+        // return a post if any of these fields (caption, tags, location) contains "q" and its case insensitive
+        const posts = await prisma.post.findMany({
+            where: {
+                OR: [
+                    { caption: { contains: q, mode: "insensitive" } }, 
+                    { tags: { contains: q, mode: "insensitive" } },
+                    { location: { contains: q, mode: "insensitive"} },
+                ],
+            },
+            orderBy: { createdAt: "desc" },
+            take: 50,
+            include: {
+                user: true,
+                _count: { select: { likes: true, saves: true } },
+                likes: { where: { userId: authUser.id } },
+                saves: { where: { userId: authUser.id } },
+            },
+        });
+
+        const mapped = posts.map((p) => {
+            const tagList = p.tags ? p.tags.replace(/ /g, "").split(",").filter(Boolean) : [];
+            return {
+                id: p.id,
+                caption: p.caption,
+                imageUrl: p.imageUrl,
+                location: p.location,
+                tags: tagList,
+                createdAt: p.createdAt.toISOString(),
+                creator: {
+                    id: p.user.id,
+                    name: p.user.name,
+                    username: p.user.username,
+                    email: p.user.email,
+                    imageUrl: p.user.imageUrl ?? "",
+                    bio: p.user.bio ?? "",
+                },
+                likeCount: p._count.likes,
+                saveCount: p._count.saves,
+                isLikedByMe: authUser ? (p as any).likes?.length > 0 : false,
+                isSavedByMe: authUser ? (p as any).saves?.length > 0 : false,
+            };
+        });
+        return res.json({ posts: mapped });
+    } catch(error) {
+        console.error("Error in GET /posts/search:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    };
+});
+
+// Get Infinite Posts
+app.get("/posts", async (req, res) => {
+    try {
+        const authUser = await getAuthUser(req);
+        if(!authUser) return res.status(401).json({error: "Not authenticated"});
+
+        const limitParam = req.query.limit as string | undefined;
+        const cursor = req.query.cursor as string | undefined;
+        const limit = limitParam ? Math.min(parseInt(limitParam, 10), 50) : 10;
+
+        const posts = await prisma.post.findMany({
+            take: limit + 1, // one extra post so can detect if theres another page
+            ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}), // skip 1 to avoid including the cursor item again
+            orderBy: { createdAt: "desc" },
+            include: {
+                user: true,
+                _count: { select: { likes: true, saves: true } },
+                likes: { where: { userId: authUser.id } },
+                saves: { where: { userId: authUser.id } },
+            },
+        });
+
+        const hasNext = posts.length > limit;
+        const page = hasNext ? posts.slice(0, limit) : posts;
+        const nextCursor = hasNext ? page[page.length - 1]?.id : null;
+        
+        const mapped = page.map((p) => {
+            const tagList = p.tags ? p.tags.replace(/ /g, "").split(",").filter(Boolean) : [];
+            return {
+                id: p.id,
+                caption: p.caption,
+                imageUrl: p.imageUrl,
+                location: p.location,
+                tags: tagList,
+                createdAt: p.createdAt.toISOString(),
+                creator: {
+                    id: p.user.id,
+                    name: p.user.name,
+                    username: p.user.username,
+                    email: p.user.email,
+                    imageUrl: p.user.imageUrl ?? "",
+                    bio: p.user.bio ?? "",
+                },
+                likeCount: p._count.likes,
+                saveCount: p._count.saves,
+                isLikedByMe: authUser ? (p as any).likes?.length > 0 : false,
+                isSavedByMe: authUser ? (p as any).saves?.length > 0 : false,
+            };
+        });
+        return res.json({ posts: mapped, nextCursor });
+    } catch(error) {
+        console.error("Error in GET/posts:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    };
+});
+
+// Get a Single Post
+app.get("/posts/:id", async(req, res) => {
+    try {
+        const authUser = await getAuthUser(req);
+        if(!authUser) return res.status(401).json({ error: "Not authenticated" });
+
+        const { id } = req.params;
+
+        const p = await prisma.post.findUnique({
+            where: { id },
+            include: { 
+                user: true,
+                likes: authUser ? { where: { userId: authUser.id }} : false,
+                saves: authUser ? { where: { userId: authUser.id }} : false,
+                _count: { select: { likes: true, saves: true }},
+            },
+        });
+
+        if(!p) {
+            return res.status(404).json({ error: "Post not found" });
+        };
+
+        const tagList = p.tags ? p.tags.replace(/ /g, "").split(",").filter(Boolean) : [];
+
+        const post: PostDTO = {
+            id: p.id,
+            caption: p.caption,
+            imageUrl: p.imageUrl,
+            location: p.location,
+            tags: tagList,
+            createdAt: p.createdAt.toISOString(),
+            creator: {
+                id: p.user.id,
+                name: p.user.name,
+                username: p.user.username,
+                email: p.user.email,
+                imageUrl: p.user.imageUrl ?? "",
+                bio: p.user.bio ?? "",
+            },
+            likeCount: p._count.likes,
+            saveCount: p._count.saves,
+            isLikedByMe: authUser ? p.likes.length > 0 : false,
+            isSavedByMe: authUser ? p.saves.length > 0 : false,
+        };
+
+        return res.json({ post });
+    } catch (error) {
+        console.error("Error in GET /posts/:id :", error);
+        return res.status(500).json({ error: "Internal server error" });
+    };
+});
+
 // Create a Post
 app.post("/posts", async (req, res) => {
     try {
@@ -457,223 +674,6 @@ app.delete("/posts/:id", async(req, res) => {
     } catch(error) {
         console.error("Error in DELETE /posts/:id", error);
         return res.status(500).json({ error: "Internal server error"});
-    };
-});
-
-// Get a Single Post
-app.get("/posts/:id", async(req, res) => {
-    try {
-        const authUser = await getAuthUser(req);
-        if(!authUser) return res.status(401).json({ error: "Not authenticated" });
-
-        const { id } = req.params;
-
-        const p = await prisma.post.findUnique({
-            where: { id },
-            include: { 
-                user: true,
-                likes: authUser ? { where: { userId: authUser.id }} : false,
-                saves: authUser ? { where: { userId: authUser.id }} : false,
-                _count: { select: { likes: true, saves: true }},
-            },
-        });
-
-        if(!p) {
-            return res.status(404).json({ error: "Post not found" });
-        };
-
-        const tagList = p.tags ? p.tags.replace(/ /g, "").split(",").filter(Boolean) : [];
-
-        const post: PostDTO = {
-            id: p.id,
-            caption: p.caption,
-            imageUrl: p.imageUrl,
-            location: p.location,
-            tags: tagList,
-            createdAt: p.createdAt.toISOString(),
-            creator: {
-                id: p.user.id,
-                name: p.user.name,
-                username: p.user.username,
-                email: p.user.email,
-                imageUrl: p.user.imageUrl ?? "",
-                bio: p.user.bio ?? "",
-            },
-            likeCount: p._count.likes,
-            saveCount: p._count.saves,
-            isLikedByMe: authUser ? p.likes.length > 0 : false,
-            isSavedByMe: authUser ? p.saves.length > 0 : false,
-        };
-
-        return res.json({ post });
-    } catch (error) {
-        console.error("Error in GET /posts/:id :", error);
-        return res.status(500).json({ error: "Internal server error" });
-    };
-});
-
-// Get Recent Posts
-app.get("/posts/recent", async (req, res) => {
-    try {
-        const authUser = await getAuthUser(req);
-        const limitParam = req.query.limit as string | undefined;
-        const limit = limitParam ? parseInt(limitParam, 10) : 20;
-
-        const posts = await prisma.post.findMany({
-            orderBy: { createdAt: "desc" },
-            take: limit,
-            include: { 
-                user: true,
-                likes: authUser ?  { where: { userId: authUser.id } } : false,
-                saves: authUser ? { where: { userId: authUser.id } } : false,
-                _count: { select: { likes: true, saves: true} },
-            },
-        });
-
-        const mapped = posts.map<PostDTO>((p) => {
-            const tagList = p.tags ? p.tags.replace(/ /g, "").split(",").filter(Boolean) : [];
-            return {
-                id: p.id,
-                caption: p.caption,
-                imageUrl: p.imageUrl,
-                location: p.location,
-                tags: tagList,
-                createdAt: p.createdAt.toISOString(),
-                creator: {
-                    id: p.user.id,
-                    name: p.user.name,
-                    username: p.user.username,
-                    email: p.user.email,
-                    imageUrl: p.user.imageUrl ?? "",
-                    bio: p.user.bio ?? "",
-                },
-                likeCount: p._count.likes,
-                saveCount: p._count.saves,
-                isLikedByMe: authUser ? p.likes.length > 0 : false,
-                isSavedByMe: authUser ? p.saves.length > 0 : false,
-            };
-        });
-
-        return res.json({ posts: mapped });
-    } catch (error) {
-        console.error("Error in GET /posts/recent:", error);
-        return res.status(500).json({ error: "Internal server error" });
-    };
-});
-
-// Get Infinite Posts
-app.get("/posts", async (req, res) => {
-    try {
-        const authUser = await getAuthUser(req);
-        if(!authUser) return res.status(401).json({error: "Not authenticated"});
-
-        const limitParam = req.query.limit as string | undefined;
-        const cursor = req.query.cursor as string | undefined;
-        const limit = limitParam ? Math.min(parseInt(limitParam, 10), 50) : 10;
-
-        const posts = await prisma.post.findMany({
-            take: limit + 1, // one extra post so can detect if theres another page
-            ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}), // skip 1 to avoid including the cursor item again
-            orderBy: { createdAt: "desc" },
-            include: {
-                user: true,
-                _count: { select: { likes: true, saves: true } },
-                likes: { where: { userId: authUser.id } },
-                saves: { where: { userId: authUser.id } },
-            },
-        });
-
-        const hasNext = posts.length > limit;
-        const page = hasNext ? posts.slice(0, limit) : posts;
-        const nextCursor = hasNext ? page[page.length - 1]?.id : null;
-        
-        const mapped = page.map((p) => {
-            const tagList = p.tags ? p.tags.replace(/ /g, "").split(",").filter(Boolean) : [];
-            return {
-                id: p.id,
-                caption: p.caption,
-                imageUrl: p.imageUrl,
-                location: p.location,
-                tags: tagList,
-                createdAt: p.createdAt.toISOString(),
-                creator: {
-                    id: p.user.id,
-                    name: p.user.name,
-                    username: p.user.username,
-                    email: p.user.email,
-                    imageUrl: p.user.imageUrl ?? "",
-                    bio: p.user.bio ?? "",
-                },
-                likeCount: p._count.likes,
-                saveCount: p._count.saves,
-                isLikedByMe: authUser ? (p as any).likes?.length > 0 : false,
-                isSavedByMe: authUser ? (p as any).saves?.length > 0 : false,
-            };
-        });
-        return res.json({ posts: mapped, nextCursor });
-    } catch(error) {
-        console.error("Error in GET/posts:", error);
-        return res.status(500).json({ error: "Internal server error" });
-    };
-});
-
-// Search Posts
-app.get("/posts/search", async (req, res) => {
-    try {
-        const authUser = await getAuthUser(req);
-        if(!authUser) return res.status(401).json({ error: "Not authenticated" });
-        
-        const q = (req.query.q as string | undefined)?.trim(); //takes q from query string and trim for search
-        if(!q) {
-            return res.json({ posts: [] }); // No usable search term so empty result
-        };
-
-        // return a post if any of these fields (caption, tags, location) contains "q" and its case insensitive
-        const posts = await prisma.post.findMany({
-            where: {
-                OR: [
-                    { caption: { contains: q, mode: "insensitive" } }, 
-                    { tags: { contains: q, mode: "insensitive" } },
-                    { location: { contains: q, mode: "insensitive"} },
-                ],
-            },
-            orderBy: { createdAt: "desc" },
-            take: 50,
-            include: {
-                user: true,
-                _count: { select: { likes: true, saves: true } },
-                likes: { where: { userId: authUser.id } },
-                saves: { where: { userId: authUser.id } },
-            },
-        });
-
-        const mapped = posts.map((p) => {
-            const tagList = p.tags ? p.tags.replace(/ /g, "").split(",").filter(Boolean) : [];
-            return {
-                id: p.id,
-                caption: p.caption,
-                imageUrl: p.imageUrl,
-                location: p.location,
-                tags: tagList,
-                createdAt: p.createdAt.toISOString(),
-                creator: {
-                    id: p.user.id,
-                    name: p.user.name,
-                    username: p.user.username,
-                    email: p.user.email,
-                    imageUrl: p.user.imageUrl ?? "",
-                    bio: p.user.bio ?? "",
-                },
-                likeCount: p._count.likes,
-                saveCount: p._count.saves,
-                isLikedByMe: authUser ? (p as any).likes?.length > 0 : false,
-                isSavedByMe: authUser ? (p as any).saves?.length > 0 : false,
-            };
-        });
-        return res.json({ posts: mapped });
-    } catch(error) {
-        console.error("Error in GET /posts/search:", error);
-        return res.status(500).json({ error: "Internal server error" });
     };
 });
 
