@@ -11,7 +11,8 @@ import multer from "multer";
 
 const app = express();
 
-//Make sure to have a connection string
+// AUTH ===================================================================================================================================================
+// Make sure to have a connection string
 const connectionString = process.env.DATABASE_URL;
 if(!connectionString) {
     throw new Error("DATABASE_URL is not set in .env");
@@ -46,7 +47,7 @@ function setAuthCookie(res: express.Response, token: string) {
     });
 };
 
-//Root route to avoid "Cannot GET /"
+// Root route to avoid "Cannot GET /"
 app.get("/", (_req, res) => {
     res.send("kamgram backend is running!");
 });
@@ -71,6 +72,7 @@ async function getAuthUser(req: express.Request) {
     };
 };
 
+// USER ===================================================================================================================================================
 // Current User
 app.get("/auth/me", async (req, res) => {
     try {
@@ -243,6 +245,44 @@ app.post("/auth/logout", (req, res) => {
         secure: false, // true in prod with HTTPS
     });
     return res.status(204).end();
+});
+
+// Update Current User (Profile + Avatar Upload)
+app.patch("/users/me", async (req, res) => {
+    try {
+        const authUser = await getAuthUser(req);
+        if(!authUser) return res.status(401).json({ error: "Not authenticated"} );
+
+        // Read fields from body
+        const { name, bio, imageUrl} = req.body as {
+            name?: string;
+            bio?: string;
+            imageUrl?: string;
+        };
+
+        const updated = await prisma.user.update({
+            where: { id: authUser.id },
+            data: {
+                ...(name !== undefined ? { name } : {}),
+                ...(bio !== undefined ? { bio } : {}),
+                ...(imageUrl !== undefined ? { bio } : {}),
+            },
+        });
+
+        const user = {
+            id: updated.id,
+            name: updated.name,
+            email: updated.email,
+            username: updated.username,
+            imageUrl: updated.imageUrl ?? "",
+            bio: updated.bio ?? "",
+        };
+
+        return res.json({ user });
+    } catch (error) {
+        console.error("Error in PATCH /users/me:", error);
+        return res.status(500).json({ error: "Internal server error"} );
+    };
 });
 
 // POST ===================================================================================================================================================
