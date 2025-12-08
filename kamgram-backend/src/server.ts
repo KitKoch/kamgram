@@ -577,6 +577,66 @@ app.get("/posts", async (req, res) => {
     };
 });
 
+// Search Posts
+app.get("/posts/search", async (req, res) => {
+    try {
+        const authUser = await getAuthUser(req);
+        if(!authUser) return res.status(401).json({ error: "Not authenticated" });
+        
+        const q = (req.query.q as string | undefined)?.trim(); //takes q from query string and trim for search
+        if(!q) {
+            return res.json({ posts: [] }); // No usable search term so empty result
+        };
+
+        // return a post if any of these fields (caption, tags, location) contains "q" and its case insensitive
+        const posts = await prisma.post.findMany({
+            where: {
+                OR: [
+                    { caption: { contains: q, mode: "insensitive" } }, 
+                    { tags: { contains: q, mode: "insensitive" } },
+                    { location: { contains: q, mode: "insensitive"} },
+                ],
+            },
+            orderBy: { createdAt: "desc" },
+            take: 50,
+            include: {
+                user: true,
+                _count: { select: { likes: true, saves: true } },
+                likes: { where: { userId: authUser.id } },
+                saves: { where: { userId: authUser.id } },
+            },
+        });
+
+        const mapped = posts.map((p) => {
+            const tagList = p.tags ? p.tags.replace(/ /g, "").split(",").filter(Boolean) : [];
+            return {
+                id: p.id,
+                caption: p.caption,
+                imageUrl: p.imageUrl,
+                location: p.location,
+                tags: tagList,
+                createdAt: p.createdAt.toISOString(),
+                creator: {
+                    id: p.user.id,
+                    name: p.user.name,
+                    username: p.user.username,
+                    email: p.user.email,
+                    imageUrl: p.user.imageUrl ?? "",
+                    bio: p.user.bio ?? "",
+                },
+                likeCount: p._count.likes,
+                saveCount: p._count.saves,
+                isLikedByMe: authUser ? (p as any).likes?.length > 0 : false,
+                isSavedByMe: authUser ? (p as any).saves?.length > 0 : false,
+            };
+        });
+        return res.json({ posts: mapped });
+    } catch(error) {
+        console.error("Error in GET /posts/search:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    };
+});
+
 // LIKE ===================================================================================================================================================
 // Like a Post
 app.post("/posts/:id/like", async (req, res) => {
