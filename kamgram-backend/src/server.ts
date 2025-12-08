@@ -310,6 +310,80 @@ app.post("/posts", async (req, res) => {
     }
 });
 
+// Update a Post
+app.patch("/posts/:id", async (req, res) => {
+    try {
+        const authUser = await getAuthUser(req);
+        if(!authUser) return res.status(401).json({ error: "Not authenticated" });
+
+        const postId = req.params.id;
+
+        //Check if post exists
+        const existing = await prisma.post.findUnique({
+            where: { id: postId },
+        });
+        if(!existing) {
+            return res.status(404).json({ error: "Post not found" });
+        };
+
+        // Ownership check 
+        if(existing.userId !== authUser.id) {
+            return res.status(403).json({ error: "Not allowed" });
+        };
+
+        // Read fields from the body
+        const { caption, location, tags, imageUrl } = req.body as {
+            caption?: string,
+            location?: string,
+            tags?: string;
+            imageUrl?: string;
+        };
+
+        // Allow partial updates
+        const updated = await prisma.post.update({
+            where: { id: postId },
+            data: {
+                ...(caption !== undefined ? { caption } : {}),
+                ...(location !== undefined ? { location } : {}),
+                ...(tags !== undefined ? { tags } : {}),
+                ...(imageUrl !== undefined ? { imageUrl } : {}),
+            },
+            include: {
+                user: true,
+                _count: { select: { likes: true, saves: true} },
+            },
+        });
+
+        const tagList = updated.tags ? updated.tags.replace(/ /g, "").split(",").filter(Boolean) : [];
+
+        const updatedPost: PostDTO = {
+            id: updated.id,
+            caption: updated.caption,
+            imageUrl: updated.imageUrl,
+            location: updated.location,
+            tags: tagList,
+            createdAt: updated.createdAt.toISOString(),
+            creator: {
+                id: updated.user.id,
+                name: updated.user.name,
+                username: updated.user.username,
+                email: updated.user.email,
+                imageUrl: updated.user.imageUrl ?? "",
+                bio: updated.user.bio ?? "",
+            },
+            likeCount: updated._count.likes,
+            saveCount: updated._count.saves,
+            isLikedByMe: false,
+            isSavedByMe: false,
+        };
+
+        return res.status(200).json({ updatedPost });       
+    } catch(error) {
+        console.error("Error in PATCH /posts/:id:", error);
+        return res.status(500).json({ error: "Internal Server Error"});
+    }
+})
+
 // Get Recent Posts
 app.get("/posts/recent", async (req, res) => {
     try {
