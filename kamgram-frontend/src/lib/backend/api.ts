@@ -66,6 +66,25 @@ export async function getCurrentUserBackend(): Promise<IUser | null> {
     return data.user as IUser;
 };
 
+// Update Current User ==============================================================================================================
+export type updateMePayload = {
+    name?: string;
+    bio?: string;
+    imageUrl?: string;
+};
+
+export async function updateMeBackend(payload: updateMePayload) {
+    const res = await fetch(`${API_URL}/users/me`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json"},
+        credentials: "include",
+        body: JSON.stringify(payload),
+    });
+    if(!res.ok) throw new Error("Failed to update profile");
+    const data = await res.json();
+    return data.user;
+};
+
 // Logout ===========================================================================================================================
 export async function signOutBackend(): Promise<void> {
     const res = await fetch(`${API_URL}/auth/logout`, {
