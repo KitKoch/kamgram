@@ -635,7 +635,7 @@ app.patch("/posts/:id", async (req, res) => {
             isSavedByMe: false,
         };
 
-        return res.status(200).json({ updatedPost });       
+        return res.status(200).json({ post: updatedPost });       
     } catch(error) {
         console.error("Error in PATCH /posts/:id:", error);
         return res.status(500).json({ error: "Internal Server Error"});
