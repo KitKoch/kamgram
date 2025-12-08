@@ -265,7 +265,7 @@ app.patch("/users/me", async (req, res) => {
             data: {
                 ...(name !== undefined ? { name } : {}),
                 ...(bio !== undefined ? { bio } : {}),
-                ...(imageUrl !== undefined ? { bio } : {}),
+                ...(imageUrl !== undefined ? { imageUrl } : {}),
             },
         });
 
