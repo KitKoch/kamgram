@@ -142,7 +142,7 @@ export async function getRecentPostBackend(): Promise<IBackendPost[]> {
 };
 
 // GET INFINITE POSTS ==============================================================================================================
-export async function getInfinitePostsBackend(cursor?: string, limit = 10): Promise<IBackendPost[]> {
+export async function getInfinitePostsBackend(cursor?: string, limit = 10) {
     const url = new URL(`${API_URL}/posts`);
     url.searchParams.set("limit", String(limit)); // add limit (always)
     if(cursor) {
@@ -157,8 +157,8 @@ export async function getInfinitePostsBackend(cursor?: string, limit = 10): Prom
     if(!res.ok) {
         throw new Error("Failed to fetch posts");
     };
-    const data = await res.json(); // { posts, nextCursor }
-    return data.posts as IBackendPost[];
+
+    return res.json() as Promise<{ posts: IBackendPost[]; nextCursor: string | null }>; // { posts, nextCursor }
 };
 
 // SEARCH POSTS =====================================================================================================================
