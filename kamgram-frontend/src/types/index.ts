@@ -51,6 +51,13 @@ import React from "react";
     createdAt: string;      // ISO date string
     creator: IUser;         // reuse the existing IUser
   }
+
+  export type IUpdatePostBackend = {
+    caption?: string;
+    location?: string;
+    tags?: string;
+    imageUrl?: string;
+  }
   
   export type IUser = {
     id: string;
@@ -60,6 +67,12 @@ import React from "react";
     imageUrl: string;
     bio: string;
   };
+
+   export type IUpdateMe = {
+    name?: string;
+    bio?: string;
+    imageUrl?: string;
+   };
   
   export type INewUser = {
     name: string;

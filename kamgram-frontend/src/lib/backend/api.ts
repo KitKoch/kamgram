@@ -1,7 +1,10 @@
-import { INewUser, IUser, INewPost, IBackendPost } from "@/types";
+import { INewUser, IUser, INewPost, IBackendPost, IUpdateMe, IUpdatePostBackend } from "@/types";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
 
+// ==================================================================================================================================
+// USER QUERIES
+// ==================================================================================================================================
 // Register =========================================================================================================================
 export async function createUserAccountBackend(user: INewUser): Promise<IUser> {
     const res = await fetch(`${API_URL}/auth/register`, {
@@ -67,13 +70,7 @@ export async function getCurrentUserBackend(): Promise<IUser | null> {
 };
 
 // Update Current User ==============================================================================================================
-export type updateMePayload = {
-    name?: string;
-    bio?: string;
-    imageUrl?: string;
-};
-
-export async function updateMeBackend(payload: updateMePayload) {
+export async function updateMeBackend(payload: IUpdateMe): Promise <IUser> {
     const res = await fetch(`${API_URL}/users/me`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json"},
@@ -82,7 +79,7 @@ export async function updateMeBackend(payload: updateMePayload) {
     });
     if(!res.ok) throw new Error("Failed to update profile");
     const data = await res.json();
-    return data.user;
+    return data.user as IUser;
 };
 
 // Logout ===========================================================================================================================
@@ -97,6 +94,9 @@ export async function signOutBackend(): Promise<void> {
     };
 };
 
+// ==================================================================================================================================
+// POST QUERIES
+// ==================================================================================================================================
 // Create Post ======================================================================================================================
 export async function createPostBackend(post: INewPost): Promise<IBackendPost> {
     let imageUrl = "";
@@ -150,7 +150,7 @@ export async function getPostByIdBackEnd(postId: string): Promise<IBackendPost> 
 
     if(res.status === 404) {
         throw new Error("Post not found");
-    }
+    };
 
     if(!res.ok) {
         throw new Error("Failed to get post");
@@ -158,9 +158,29 @@ export async function getPostByIdBackEnd(postId: string): Promise<IBackendPost> 
 
     const data = await res.json();
     return data.post as IBackendPost;
+};
+
+// Update Post ======================================================================================================================
+export async function updatePostBackend(postId: string, payload: IUpdatePostBackend): Promise<IBackendPost> {
+    const res = await fetch(`${API_URL}/posts/${postId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json"},
+        credentials: "include",
+        body: JSON.stringify(payload),
+    });
+    
+    if(!res.ok) {
+        throw new Error("Failed to update post");
+    };
+
+    const data = await res.json();
+    return data.post as IBackendPost;
 }
 
-// File upload
+// ==================================================================================================================================
+// FILE QUERIES
+// ==================================================================================================================================
+// File upload ======================================================================================================================
 export async function uploadFileBackend(file: File): Promise<string> {
     const form = new FormData();
     form.append("file", file);
