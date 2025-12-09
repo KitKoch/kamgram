@@ -5,37 +5,27 @@ import {
     useInfiniteQuery,
 } from '@tanstack/react-query';
 import { 
-    // createUserAccount, 
-    // signInAccount,
-    // signOutAccount,
-    // createPost,
-    // getRecentPosts,
     getUsers,
-    // likePost,
-    // savePost,
-    // deleteSavedPost,
-    // getCurrentUser,
-    // getPostById,
-    // updatePost,
-    // deletePost,
-    getInfinitePosts,
+    // getInfinitePosts,
     searchPosts,
     getUserById,
     updateUser,
  } from '../appwrite/api';
-import { createUserAccountBackend, 
-         getCurrentUserBackend, 
-         signInBackend, 
-         signOutBackend, 
-         createPostBackend, 
-         getRecentPostBackend, 
-         getPostByIdBackEnd,
-         updatePostBackend,
-         deletePostBackend,
-         savePostBackend,
-         unsavePostBackend,
-         likePostBackend,
-         unlikePostBackend, 
+import { 
+    createUserAccountBackend, 
+    getCurrentUserBackend, 
+    signInBackend, 
+    signOutBackend, 
+    createPostBackend, 
+    getRecentPostBackend, 
+    getPostByIdBackEnd,
+    updatePostBackend,
+    deletePostBackend,
+    savePostBackend,
+    unsavePostBackend,
+    likePostBackend,
+    unlikePostBackend,
+    getInfinitePostsBackend, 
 } from '../backend/api'; 
 import { INewUser, INewPost, IUpdateUser, IUpdatePostBackend } from '@/types';
 import { QUERY_KEYS } from './queryKeys';
@@ -155,21 +145,31 @@ export const useDeletePost = () => {
     });
 };
 
+// export const useGetPosts = () => {
+//     return useInfiniteQuery({ 
+//         queryKey: [QUERY_KEYS.GET_INFINITE_POSTS],
+//         queryFn: getInfinitePosts as any, 
+//         getNextPageParam: (lastPage: any) => {
+//             //If theres no data, there are no more pages
+//             if(lastPage && lastPage.documents.length === 0) return null;
+
+//             //Use $id of the last document as the cursor
+//             const lastId = lastPage.documents[lastPage.documents.length - 1].$id;
+
+//             return lastId;
+//         }
+//     })
+// };
 export const useGetPosts = () => {
-    return useInfiniteQuery({ //useInfiniteQuery is react built in hook for infinite scroll, it will fetch the next page of data when the user scrolls to the bottom of the page
-        queryKey: [QUERY_KEYS.GET_INFINITE_POSTS],
-        queryFn: getInfinitePosts as any, 
-        getNextPageParam: (lastPage: any) => {
-            //If theres no data, there are no more pages
-            if(lastPage && lastPage.documents.length === 0) return null;
-
-            //Use $id of the last document as the cursor
-            const lastId = lastPage.documents[lastPage.documents.length - 1].$id;
-
-            return lastId;
-        }
-    })
-};
+    return useInfiniteQuery( //useInfiniteQuery is react built in hook for infinite scroll, it will fetch the next page of data when the user scrolls to the bottom of the page
+        [QUERY_KEYS.GET_INFINITE_POSTS],
+        ({ pageParam = null }) => {
+            return getInfinitePostsBackend(pageParam ?? undefined, 10),
+            {
+                 getNextPageParam: (lastPage: any) => lastPage.nextCursor ?? undefined,
+            }
+        });
+    };
 
 export const useSearchPosts = (searchTerm: string) => {
     return useQuery({
