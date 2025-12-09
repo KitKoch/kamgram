@@ -141,6 +141,44 @@ export async function getRecentPostBackend(): Promise<IBackendPost[]> {
     return data.posts as IBackendPost[];
 };
 
+// GET INFINITE POSTS ==============================================================================================================
+export async function getInfinitePostsBackend(cursor?: string, limit = 10): Promise<IBackendPost[]> {
+    const url = new URL(`${API_URL}/posts`);
+    url.searchParams.set("limit", String(limit)); // add limit (always)
+    if(cursor) {
+        url.searchParams.set("cursor", cursor); // add cursor (if you have one)
+    };
+
+    const res = await fetch(url.toString(), {
+        method: "GET",
+        credentials: "include",
+    });
+
+    if(!res.ok) {
+        throw new Error("Failed to fetch posts");
+    };
+    const data = await res.json(); // { posts, nextCursor }
+    return data.posts as IBackendPost[];
+};
+
+// SEARCH POSTS =====================================================================================================================
+export async function searchPostsBackend(q: string): Promise<IBackendPost[]> {
+    const url = new URL(`${API_URL}/posts/search`);
+    url.searchParams.set("q", q);
+
+    const res = await fetch(url.toString(), {
+        method: "GET",
+        credentials: "include",
+    });
+
+    if(!res.ok) {
+        throw new Error("Failed to search");
+    };
+
+    const data = await res.json();
+    return data.posts as IBackendPost[];
+}
+
 // GET POST BY ID ===================================================================================================================
 export async function getPostByIdBackEnd(postId: string): Promise<IBackendPost> {
     const res = await fetch(`${API_URL}/posts/${postId}`, {
@@ -240,7 +278,7 @@ export async function unsavePostBackend(postId: string): Promise<void> {
 // ==================================================================================================================================
 // FILE QUERIES
 // ==================================================================================================================================
-// File upload ======================================================================================================================
+// FILE UPLOAD ======================================================================================================================
 export async function uploadFileBackend(file: File): Promise<string> {
     const form = new FormData();
     form.append("file", file);
