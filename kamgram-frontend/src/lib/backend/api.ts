@@ -191,6 +191,31 @@ export async function deletePostBackend(postId: string): Promise<Boolean> {
 };
 
 // ==================================================================================================================================
+// LIKE/SAVE QUERIES
+// ==================================================================================================================================
+// LIKE POST ========================================================================================================================
+export async function likePostBackend(postId: string): Promise<void> {
+    const res = await fetch(`${API_URL}/posts/${postId}/like`, {
+        method: "POST",
+        credentials: "include",
+    });
+    if(!res.ok && res.status !== 204) {
+        throw new Error("Failed to like Post");
+    };
+};
+
+// UNLIKE POST ======================================================================================================================
+export async function unlikePostBackend(postId: string): Promise<void> {
+    const res = await fetch(`${API_URL}/posts/${postId}/like`, {
+        method: "DELETE",
+        credentials: "include",
+    });
+    if(!res.ok && res.status !== 204) {
+        throw new Error("Failed to unlike");
+    };
+};
+
+// ==================================================================================================================================
 // FILE QUERIES
 // ==================================================================================================================================
 // File upload ======================================================================================================================
