@@ -200,7 +200,7 @@ export async function likePostBackend(postId: string): Promise<void> {
         credentials: "include",
     });
     if(!res.ok && res.status !== 204) {
-        throw new Error("Failed to like Post");
+        throw new Error("Failed to like post");
     };
 };
 
@@ -211,7 +211,29 @@ export async function unlikePostBackend(postId: string): Promise<void> {
         credentials: "include",
     });
     if(!res.ok && res.status !== 204) {
-        throw new Error("Failed to unlike");
+        throw new Error("Failed to unlike post");
+    };
+};
+
+// SAVE POST ========================================================================================================================
+export async function savePostBackend(postId: string): Promise<void> {
+    const res = await fetch(`${API_URL}/posts/${postId}/save`, {
+        method: "POST",
+        credentials: "include",
+    });
+    if(!res.ok && res.status !== 204) {
+        throw new Error("Failed to save post");
+    };
+};
+
+// UNSAVE POST ======================================================================================================================
+export async function unsavePostBackend(postId: string): Promise<void> {
+    const res = await fetch(`${API_URL}/posts/${postId}/save`, {
+        method: "DELETE",
+        credentials: "include",
+    });
+    if(!res.ok && res.status !== 204) {
+        throw new Error("Failed to unsave post");
     };
 };
 
