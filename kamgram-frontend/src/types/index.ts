@@ -57,7 +57,7 @@ import React from "react";
     location?: string;
     tags?: string;
     imageUrl?: string;
-  }
+  };
   
   export type IUser = {
     id: string;

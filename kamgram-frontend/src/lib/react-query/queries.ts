@@ -16,8 +16,8 @@ import {
     deleteSavedPost,
     // getCurrentUser,
     // getPostById,
-    updatePost,
-    deletePost,
+    // updatePost,
+    // deletePost,
     getInfinitePosts,
     searchPosts,
     getUserById,
@@ -29,9 +29,10 @@ import { createUserAccountBackend,
          signOutBackend, 
          createPostBackend, 
          getRecentPostBackend, 
-         getPostByIdBackEnd, 
+         getPostByIdBackEnd,
+         updatePostBackend, 
 } from '../backend/api'; 
-import { INewUser, INewPost, IUpdatePost, IUpdateUser } from '@/types';
+import { INewUser, INewPost, IUpdateUser, IUpdatePostBackend } from '@/types';
 import { QUERY_KEYS } from './queryKeys';
 
 //AUTH QUERIES ======================================================================================================================
@@ -75,19 +76,10 @@ export const useSignOutAccount = () => {
     });
 };
 
-//POST QUERIES ======================================================================================================================
+// ========================================================================================================================================================
+//POST QUERIES 
+// ========================================================================================================================================================
 
-// export const useCreatePost = () => {
-//     const queryClient = useQueryClient();
-//     return useMutation({
-//         mutationFn: (post: INewPost) => createPost(post),
-//         onSuccess: () => { //Why invalidate queries? Because it allows to fetch new fresh data, meaning it wont be able to get recent post from cache, rather it will get it from the server
-//             queryClient.invalidateQueries({
-//                 queryKey: [QUERY_KEYS.GET_RECENT_POSTS], //do this to minimize bug and typo if manually write the query key
-//             });
-//         },
-//     });
-// };
 export const useCreatePost = () => {
     const queryClient = useQueryClient();
 
@@ -100,13 +92,6 @@ export const useCreatePost = () => {
     });
 };
 
-
-// export const useGetRecentPosts = () => {
-//     return useQuery({
-//         queryKey: [QUERY_KEYS.GET_RECENT_POSTS],
-//         queryFn: getRecentPosts,
-//     })
-// };
 export const useGetRecentPosts = () => {
     return useQuery({
         queryKey: [QUERY_KEYS.GET_RECENT_POSTS],
@@ -114,73 +99,66 @@ export const useGetRecentPosts = () => {
     });
 };
 
-export const useLikePost = () => {
-    const queryClient = useQueryClient();
+// export const useLikePost = () => {
+//     const queryClient = useQueryClient();
 
-    return useMutation({
-        mutationFn: ({ postId, likesArray}: {postId: string; likesArray: string[]}) => likePost(postId, likesArray),
-        onSuccess: (data) => {
-            queryClient.invalidateQueries({
-                queryKey: [QUERY_KEYS.GET_POST_BY_ID, data?.$id]
-            })
-            queryClient.invalidateQueries({
-                queryKey: [QUERY_KEYS.GET_RECENT_POSTS]
-            })
-            queryClient.invalidateQueries({
-                queryKey: [QUERY_KEYS.GET_POSTS]
-            })
-            queryClient.invalidateQueries({
-                queryKey: [QUERY_KEYS.GET_CURRENT_USER]
-            })
-        }
-    })
-};
-
-export const useSavePost = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-      mutationFn: ({ userId, postId }: { userId: string; postId: string }) =>
-        savePost(userId, postId),
-      onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: [QUERY_KEYS.GET_RECENT_POSTS],
-        });
-        queryClient.invalidateQueries({
-          queryKey: [QUERY_KEYS.GET_POSTS],
-        });
-        queryClient.invalidateQueries({
-          queryKey: [QUERY_KEYS.GET_CURRENT_USER],
-        });
-      },
-    });
-};
-
-export const useDeleteSavedPost = () => {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationFn: (savedRecordId: string) => deleteSavedPost(savedRecordId),
-        onSuccess: () => {
-            queryClient.invalidateQueries({
-                queryKey: [QUERY_KEYS.GET_RECENT_POSTS],
-            });
-            queryClient.invalidateQueries({
-                queryKey: [QUERY_KEYS.GET_POSTS],
-            });
-            queryClient.invalidateQueries({
-                queryKey: [QUERY_KEYS.GET_CURRENT_USER],
-            });
-        },
-    });
-};
-
-// export const useGetPostById = (postId: string) => {
-//     return useQuery({
-//         queryKey: [QUERY_KEYS.GET_POST_BY_ID, postId],
-//         queryFn: () => getPostById(postId),
-//         enabled: !!postId, //set this to false to disable automatic refetching when the query mounts or query keys change, so we want to enable fetching only when we're fetching for another id, if we're fetching for the same one then we'll get the same detail if the postId didnt change 
+//     return useMutation({
+//         mutationFn: ({ postId, likesArray}: {postId: string; likesArray: string[]}) => likePost(postId, likesArray),
+//         onSuccess: (data) => {
+//             queryClient.invalidateQueries({
+//                 queryKey: [QUERY_KEYS.GET_POST_BY_ID, data?.$id]
+//             })
+//             queryClient.invalidateQueries({
+//                 queryKey: [QUERY_KEYS.GET_RECENT_POSTS]
+//             })
+//             queryClient.invalidateQueries({
+//                 queryKey: [QUERY_KEYS.GET_POSTS]
+//             })
+//             queryClient.invalidateQueries({
+//                 queryKey: [QUERY_KEYS.GET_CURRENT_USER]
+//             })
+//         }
 //     })
 // };
+
+// export const useSavePost = () => {
+//     const queryClient = useQueryClient();
+//     return useMutation({
+//       mutationFn: ({ userId, postId }: { userId: string; postId: string }) =>
+//         savePost(userId, postId),
+//       onSuccess: () => {
+//         queryClient.invalidateQueries({
+//           queryKey: [QUERY_KEYS.GET_RECENT_POSTS],
+//         });
+//         queryClient.invalidateQueries({
+//           queryKey: [QUERY_KEYS.GET_POSTS],
+//         });
+//         queryClient.invalidateQueries({
+//           queryKey: [QUERY_KEYS.GET_CURRENT_USER],
+//         });
+//       },
+//     });
+// };
+
+// export const useDeleteSavedPost = () => {
+//     const queryClient = useQueryClient();
+
+//     return useMutation({
+//         mutationFn: (savedRecordId: string) => deleteSavedPost(savedRecordId),
+//         onSuccess: () => {
+//             queryClient.invalidateQueries({
+//                 queryKey: [QUERY_KEYS.GET_RECENT_POSTS],
+//             });
+//             queryClient.invalidateQueries({
+//                 queryKey: [QUERY_KEYS.GET_POSTS],
+//             });
+//             queryClient.invalidateQueries({
+//                 queryKey: [QUERY_KEYS.GET_CURRENT_USER],
+//             });
+//         },
+//     });
+// };
+
 export const useGetPostById = (postId: string) => {
     return useQuery({
         queryKey: [QUERY_KEYS.GET_POST_BY_ID, postId],
@@ -192,26 +170,26 @@ export const useGetPostById = (postId: string) => {
 export const useUpdatePost = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (post: IUpdatePost) => updatePost(post),
+        mutationFn: ({ postId, payload } : { postId: string, payload: IUpdatePostBackend}) => updatePostBackend(postId, payload),
         onSuccess: (data) => {
-            queryClient.invalidateQueries({
-                queryKey: [QUERY_KEYS.GET_POST_BY_ID, data?.$id]
-            })
-        }
-    })
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_POST_BY_ID, data?.id] });
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_RECENT_POSTS] });
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_INFINITE_POSTS] });
+        },
+    });
 };
 
-export const useDeletePost = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: ({ postId, imageId } : { postId: string, imageId: string}) => deletePost(postId, imageId),
-        onSuccess: () => {
-            queryClient.invalidateQueries({
-                queryKey: [QUERY_KEYS.GET_RECENT_POSTS],
-            })
-        }
-    })
-};
+// export const useDeletePost = () => {
+//     const queryClient = useQueryClient();
+//     return useMutation({
+//         mutationFn: ({ postId, imageId } : { postId: string, imageId: string}) => deletePost(postId, imageId),
+//         onSuccess: () => {
+//             queryClient.invalidateQueries({
+//                 queryKey: [QUERY_KEYS.GET_RECENT_POSTS],
+//             })
+//         }
+//     })
+// };
 
 export const useGetPosts = () => {
     return useInfiniteQuery({ //useInfiniteQuery is react built in hook for infinite scroll, it will fetch the next page of data when the user scrolls to the bottom of the page
