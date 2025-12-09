@@ -6,8 +6,7 @@ import {
 } from '@tanstack/react-query';
 import { 
     getUsers,
-    // getInfinitePosts,
-    searchPosts,
+    // searchPosts,
     getUserById,
     updateUser,
  } from '../appwrite/api';
@@ -25,7 +24,8 @@ import {
     unsavePostBackend,
     likePostBackend,
     unlikePostBackend,
-    getInfinitePostsBackend, 
+    getInfinitePostsBackend,
+    searchPostsBackend, 
 } from '../backend/api'; 
 import { INewUser, INewPost, IUpdateUser, IUpdatePostBackend } from '@/types';
 import { QUERY_KEYS } from './queryKeys';
@@ -145,21 +145,6 @@ export const useDeletePost = () => {
     });
 };
 
-// export const useGetPosts = () => {
-//     return useInfiniteQuery({ 
-//         queryKey: [QUERY_KEYS.GET_INFINITE_POSTS],
-//         queryFn: getInfinitePosts as any, 
-//         getNextPageParam: (lastPage: any) => {
-//             //If theres no data, there are no more pages
-//             if(lastPage && lastPage.documents.length === 0) return null;
-
-//             //Use $id of the last document as the cursor
-//             const lastId = lastPage.documents[lastPage.documents.length - 1].$id;
-
-//             return lastId;
-//         }
-//     })
-// };
 export const useGetPosts = () => {
     return useInfiniteQuery( //useInfiniteQuery is react built in hook for infinite scroll, it will fetch the next page of data when the user scrolls to the bottom of the page
         [QUERY_KEYS.GET_INFINITE_POSTS],
@@ -174,10 +159,10 @@ export const useGetPosts = () => {
 export const useSearchPosts = (searchTerm: string) => {
     return useQuery({
         queryKey: [QUERY_KEYS.SEARCH_POSTS, searchTerm],
-        queryFn: () => searchPosts(searchTerm),
+        queryFn: () => searchPostsBackend(searchTerm),
         enabled: !!searchTerm //When is it going to be automatically refetched? When the search term changes
-    })
-}
+    });
+};
 // ========================================================================================================================================================
 //USER QUERIES 
 // ========================================================================================================================================================
