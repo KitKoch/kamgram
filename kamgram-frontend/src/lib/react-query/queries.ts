@@ -12,7 +12,7 @@ import {
     // getRecentPosts,
     getUsers,
     likePost,
-    savePost,
+    // savePost,
     deleteSavedPost,
     // getCurrentUser,
     // getPostById,
@@ -30,31 +30,23 @@ import { createUserAccountBackend,
          createPostBackend, 
          getRecentPostBackend, 
          getPostByIdBackEnd,
-         updatePostBackend, 
+         updatePostBackend,
+         deletePostBackend,
+         savePostBackend,
+         unsavePostBackend, 
 } from '../backend/api'; 
 import { INewUser, INewPost, IUpdateUser, IUpdatePostBackend } from '@/types';
 import { QUERY_KEYS } from './queryKeys';
 
-//AUTH QUERIES ======================================================================================================================
-// export const useCreateUserAccount = () => {
-//     return useMutation({
-//         mutationFn: (user: INewUser) => createUserAccount(user),
-//     });
-// };
+// ========================================================================================================================================================
+//AUTH QUERIES 
+// ========================================================================================================================================================
 export const useCreateUserAccount = () => {
     return useMutation({
         mutationFn: (user: INewUser) => createUserAccountBackend(user),
     });
 };
 
-// export const useSignInAccount = () => {
-//     return useMutation({
-//         mutationFn: (user: {
-//             email: string; 
-//             password: string;
-//         }) => signInAccount(user),
-//     });
-// };
 export const useSignInAccount = () => {
     return useMutation({
         mutationFn: (user: { email: string; password: string; }) => 
@@ -65,11 +57,6 @@ export const useSignInAccount = () => {
     });
 };
 
-// export const useSignOutAccount = () => {
-//     return useMutation({
-//         mutationFn: signOutAccount //self calling function
-//     });
-// };
 export const useSignOutAccount = () => {
     return useMutation({
         mutationFn: signOutBackend
@@ -79,7 +66,6 @@ export const useSignOutAccount = () => {
 // ========================================================================================================================================================
 //POST QUERIES 
 // ========================================================================================================================================================
-
 export const useCreatePost = () => {
     const queryClient = useQueryClient();
 
@@ -121,24 +107,23 @@ export const useGetRecentPosts = () => {
 //     })
 // };
 
-// export const useSavePost = () => {
-//     const queryClient = useQueryClient();
-//     return useMutation({
-//       mutationFn: ({ userId, postId }: { userId: string; postId: string }) =>
-//         savePost(userId, postId),
-//       onSuccess: () => {
-//         queryClient.invalidateQueries({
-//           queryKey: [QUERY_KEYS.GET_RECENT_POSTS],
-//         });
-//         queryClient.invalidateQueries({
-//           queryKey: [QUERY_KEYS.GET_POSTS],
-//         });
-//         queryClient.invalidateQueries({
-//           queryKey: [QUERY_KEYS.GET_CURRENT_USER],
-//         });
-//       },
-//     });
-// };
+export const useSavePost = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ postId, shouldSave } : { postId: string; shouldSave: boolean}) => {
+            if(shouldSave) {
+                await savePostBackend(postId);
+            } else {
+                await unsavePostBackend(postId);
+            };
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_RECENT_POSTS] });
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_INFINITE_POSTS] });
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_CURRENT_USER] });
+        },
+    });
+};
 
 // export const useDeleteSavedPost = () => {
 //     const queryClient = useQueryClient();
@@ -179,17 +164,16 @@ export const useUpdatePost = () => {
     });
 };
 
-// export const useDeletePost = () => {
-//     const queryClient = useQueryClient();
-//     return useMutation({
-//         mutationFn: ({ postId, imageId } : { postId: string, imageId: string}) => deletePost(postId, imageId),
-//         onSuccess: () => {
-//             queryClient.invalidateQueries({
-//                 queryKey: [QUERY_KEYS.GET_RECENT_POSTS],
-//             })
-//         }
-//     })
-// };
+export const useDeletePost = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (postId: string) => deletePostBackend(postId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_RECENT_POSTS] });
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_INFINITE_POSTS] });
+        },
+    });
+};
 
 export const useGetPosts = () => {
     return useInfiniteQuery({ //useInfiniteQuery is react built in hook for infinite scroll, it will fetch the next page of data when the user scrolls to the bottom of the page
@@ -214,8 +198,10 @@ export const useSearchPosts = (searchTerm: string) => {
         enabled: !!searchTerm //When is it going to be automatically refetched? When the search term changes
     })
 }
+// ========================================================================================================================================================
+//USER QUERIES 
+// ========================================================================================================================================================
 
-//USER QUERIES ======================================================================================================================
 export const useGetUsers = (limit?: number) => {
     return useQuery({
         queryKey: [QUERY_KEYS.GET_USERS],
@@ -223,12 +209,6 @@ export const useGetUsers = (limit?: number) => {
     });
 };
 
-// export const useGetCurrentUser = () => {
-//     return useQuery({
-//         queryKey: [QUERY_KEYS.GET_CURRENT_USER],
-//         queryFn: getCurrentUser,
-//     });
-// };
 export const useGetCurrentUser = () => {
     return useQuery({
         queryKey: [QUERY_KEYS.GET_CURRENT_USER],
