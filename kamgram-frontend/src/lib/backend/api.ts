@@ -3,9 +3,9 @@ import { INewUser, IUser, INewPost, IBackendPost, IUpdateMe, IUpdatePostBackend 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
 
 // ==================================================================================================================================
-// USER QUERIES
+// USER & AUTH QUERIES
 // ==================================================================================================================================
-// Register =========================================================================================================================
+// REGISTER =========================================================================================================================
 export async function createUserAccountBackend(user: INewUser): Promise<IUser> {
     const res = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
@@ -25,7 +25,7 @@ export async function createUserAccountBackend(user: INewUser): Promise<IUser> {
     return data.user as IUser;
 }
 
-// Login ============================================================================================================================
+// LOGIN ============================================================================================================================
 export type SignInPayload = {
     emailOrUsername: string;
     password: string;
@@ -50,7 +50,7 @@ export async function signInBackend(payload: SignInPayload): Promise<IUser> {
     return data.user as IUser;
 };
 
-// Get Current User =================================================================================================================
+// GET CURRENT USER =================================================================================================================
 export async function getCurrentUserBackend(): Promise<IUser | null> {
     const res = await fetch(`${API_URL}/auth/me`, {
         method: "GET",
@@ -69,7 +69,7 @@ export async function getCurrentUserBackend(): Promise<IUser | null> {
     return data.user as IUser;
 };
 
-// Update Current User ==============================================================================================================
+// UPDATE CURRENT USER ==============================================================================================================
 export async function updateMeBackend(payload: IUpdateMe): Promise <IUser> {
     const res = await fetch(`${API_URL}/users/me`, {
         method: "PATCH",
@@ -82,7 +82,7 @@ export async function updateMeBackend(payload: IUpdateMe): Promise <IUser> {
     return data.user as IUser;
 };
 
-// Logout ===========================================================================================================================
+// LOGOUT ===========================================================================================================================
 export async function signOutBackend(): Promise<void> {
     const res = await fetch(`${API_URL}/auth/logout`, {
         method: "POST",
@@ -97,7 +97,7 @@ export async function signOutBackend(): Promise<void> {
 // ==================================================================================================================================
 // POST QUERIES
 // ==================================================================================================================================
-// Create Post ======================================================================================================================
+// CREATE POST ======================================================================================================================
 export async function createPostBackend(post: INewPost): Promise<IBackendPost> {
     let imageUrl = "";
 
@@ -126,7 +126,7 @@ export async function createPostBackend(post: INewPost): Promise<IBackendPost> {
     return data.post as IBackendPost;
 };
 
-// Recent Posts =====================================================================================================================
+// GET RECENT POSTS =================================================================================================================
 export async function getRecentPostBackend(): Promise<IBackendPost[]> {
     const res = await fetch(`${API_URL}/posts/recent?limit=20`, {
         method: "GET",
@@ -141,7 +141,7 @@ export async function getRecentPostBackend(): Promise<IBackendPost[]> {
     return data.posts as IBackendPost[];
 };
 
-// Get Post by ID ===================================================================================================================
+// GET POST BY ID ===================================================================================================================
 export async function getPostByIdBackEnd(postId: string): Promise<IBackendPost> {
     const res = await fetch(`${API_URL}/posts/${postId}`, {
         method: "GET",
@@ -160,7 +160,7 @@ export async function getPostByIdBackEnd(postId: string): Promise<IBackendPost> 
     return data.post as IBackendPost;
 };
 
-// Update Post ======================================================================================================================
+// UPDATE POST ======================================================================================================================
 export async function updatePostBackend(postId: string, payload: IUpdatePostBackend): Promise<IBackendPost> {
     const res = await fetch(`${API_URL}/posts/${postId}`, {
         method: "PATCH",
@@ -175,7 +175,20 @@ export async function updatePostBackend(postId: string, payload: IUpdatePostBack
 
     const data = await res.json();
     return data.post as IBackendPost;
-}
+};
+
+// DELETE POST ======================================================================================================================
+export async function deletePostBackend(postId: string): Promise<Boolean> {
+    const res = await fetch(`${API_URL}/posts/${postId}`, {
+        method: "DELETE",
+        credentials: "include",
+    });
+
+    if(!res.ok && res.status !== 204) {
+        throw new Error("Failed to delete post");
+    };
+    return true as Boolean;
+};
 
 // ==================================================================================================================================
 // FILE QUERIES
