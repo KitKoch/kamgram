@@ -6,9 +6,7 @@ import {
 } from '@tanstack/react-query';
 import { 
     getUsers,
-    // searchPosts,
     getUserById,
-    updateUser,
  } from '../appwrite/api';
 import { 
     createUserAccountBackend, 
@@ -25,9 +23,10 @@ import {
     likePostBackend,
     unlikePostBackend,
     getInfinitePostsBackend,
-    searchPostsBackend, 
+    searchPostsBackend,
+    updateMeBackend, 
 } from '../backend/api'; 
-import { INewUser, INewPost, IUpdateUser, IUpdatePostBackend } from '@/types';
+import { INewUser, INewPost, IUpdatePostBackend, IUpdateMe } from '@/types';
 import { QUERY_KEYS } from './queryKeys';
 
 // ========================================================================================================================================================
@@ -146,15 +145,14 @@ export const useDeletePost = () => {
 };
 
 export const useGetPosts = () => {
-    return useInfiniteQuery( //useInfiniteQuery is react built in hook for infinite scroll, it will fetch the next page of data when the user scrolls to the bottom of the page
-        [QUERY_KEYS.GET_INFINITE_POSTS],
-        ({ pageParam = null }) => {
-            return getInfinitePostsBackend(pageParam ?? undefined, 10),
-            {
-                 getNextPageParam: (lastPage: any) => lastPage.nextCursor ?? undefined,
-            }
-        });
-    };
+  return useInfiniteQuery(
+    [QUERY_KEYS.GET_INFINITE_POSTS],
+    ({ pageParam = null }) => getInfinitePostsBackend(pageParam ?? undefined, 10), //useInfiniteQuery is react built in hook for infinite scroll, it will fetch the next page of data when the user scrolls to the bottom of the page
+    {
+      getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    }
+  );
+};
 
 export const useSearchPosts = (searchTerm: string) => {
     return useQuery({
@@ -192,15 +190,11 @@ export const useGetUserById = (userId: string) => {
 export const useUpdateUser = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (user: IUpdateUser) => updateUser(user),
-        onSuccess: (data) => {
-            queryClient.invalidateQueries({
-                queryKey: [QUERY_KEYS.GET_CURRENT_USER],
-            });
-            queryClient.invalidateQueries({
-                queryKey: [QUERY_KEYS.GET_USER_BY_ID, data?.$id],
-            })
-        }
-    })
-}
+        mutationFn: (payload: IUpdateMe) => updateMeBackend(payload),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_CURRENT_USER], });
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_USERS], });
+        },
+    });
+};
 

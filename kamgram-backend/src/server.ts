@@ -11,7 +11,9 @@ import multer from "multer";
 
 const app = express();
 
-// AUTH ===================================================================================================================================================
+// ========================================================================================================================================================
+// AUTH
+// ========================================================================================================================================================
 // Make sure to have a connection string
 const connectionString = process.env.DATABASE_URL;
 if(!connectionString) {
@@ -72,59 +74,7 @@ async function getAuthUser(req: express.Request) {
     };
 };
 
-// USER ===================================================================================================================================================
-// Current User
-app.get("/auth/me", async (req, res) => {
-    try {
-        const token = req.cookies?.kamgram_token as string | undefined;
-
-        if(!token) {
-            return res.status(401).json({ error: "Not authenticated" });
-        }
-
-        let payload: { userId: string };
-        try {
-            payload = jwt.verify(token, JWT_SECRET) as { userId: string };
-        } catch {
-            return res.status(401).json({ error: "Invalid token" });
-        }
-
-        const existing = await prisma.user.findUnique({
-            where: { id: payload.userId },
-        });
-
-        if (!existing) {
-            return res.status(401).json({ error: "User not found" });
-        };
-
-        // UI used to expect Appwrite style "saved post"
-        // Not a mimic of that yet, but this should give backend
-        // capable of giving the data for now
-        const saves = await prisma.save.findMany({
-            where: { userId: existing.id },
-            select: { postId: true },
-        })
-
-        const user: UserDTO = {
-            id: existing?.id,
-            name: existing?.name,
-            email: existing?.email,
-            username: existing?.username,
-            imageUrl: existing?.imageUrl,
-            bio: existing?.bio,
-        };
-        
-        return res.json({ 
-            user,
-            savedPostIds: saves.map(s => s.postId), //simplied version of retrieving for now 
-        });
-    } catch (error) {
-        console.error("Error in /auth/me:", error);
-        return res.status(500).json({ error: "Internal server error" });
-    };
-});
-
-// Temporary in-memory route for /auth/register (just to prove wiring)
+// Register
 app.post("/auth/register", async (req, res) => {
     try {
         const { name, email, username, password } = req.body as NewUser;
@@ -132,17 +82,6 @@ app.post("/auth/register", async (req, res) => {
         if(!name || !email || !username || !password) {
             return res.status(400).json({ error: "Missing fields" });
         };
-
-        // For now, echo back a fake user (Postgres later)
-        // const fakeUser: UserDTO = {
-        //     id: "fake_user123",
-        //     name: "Fake",
-        //     email: "fakeuser123@fake.com",
-        //     username: "fake_user",
-        //     imageUrl: "",
-        //     bio: "test user",
-        // };
-        // return res.status(201).json({ user: fakeUser });
 
         const existing = await prisma.user.findFirst({
             where: {
@@ -247,6 +186,60 @@ app.post("/auth/logout", (req, res) => {
     return res.status(204).end();
 });
 
+// ========================================================================================================================================================
+// USER
+// ========================================================================================================================================================
+// Current User
+app.get("/auth/me", async (req, res) => {
+    try {
+        const token = req.cookies?.kamgram_token as string | undefined;
+
+        if(!token) {
+            return res.status(401).json({ error: "Not authenticated" });
+        }
+
+        let payload: { userId: string };
+        try {
+            payload = jwt.verify(token, JWT_SECRET) as { userId: string };
+        } catch {
+            return res.status(401).json({ error: "Invalid token" });
+        }
+
+        const existing = await prisma.user.findUnique({
+            where: { id: payload.userId },
+        });
+
+        if (!existing) {
+            return res.status(401).json({ error: "User not found" });
+        };
+
+        // UI used to expect Appwrite style "saved post"
+        // Not a mimic of that yet, but this should give backend
+        // capable of giving the data for now
+        const saves = await prisma.save.findMany({
+            where: { userId: existing.id },
+            select: { postId: true },
+        })
+
+        const user: UserDTO = {
+            id: existing?.id,
+            name: existing?.name,
+            email: existing?.email,
+            username: existing?.username,
+            imageUrl: existing?.imageUrl,
+            bio: existing?.bio,
+        };
+        
+        return res.json({ 
+            user,
+            savedPostIds: saves.map(s => s.postId), //simplied version of retrieving for now 
+        });
+    } catch (error) {
+        console.error("Error in /auth/me:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    };
+});
+
 // Update Current User (Profile + Avatar Upload)
 app.patch("/users/me", async (req, res) => {
     try {
@@ -285,7 +278,37 @@ app.patch("/users/me", async (req, res) => {
     };
 });
 
-// POST ===================================================================================================================================================
+// Get Users
+app.get("/users", async (req, res) => {
+    try {
+        const authUser = await getAuthUser(req);
+        if(!authUser) return res.status(401).json({ error: "Not authenticated" });
+
+        const limitParam = req.query.limit as string | undefined;
+        const limit = limitParam ? Math.min(parseInt(limitParam, 10), 50) : 20;
+
+        const users = await prisma.user.findMany({
+            take: limit,
+            orderBy: { createdAt: "desc" },
+            select: {
+                id: true,
+                name: true,
+                username: true,
+                email: true,
+                imageUrl: true,
+                bio: true,
+            },
+        });
+        return res.json({ users });
+    } catch (error) {
+        console.error("Error in GET /users:", error);
+        return res.status(500).json({ error: "Internal server error"} );
+    }
+})
+
+// ========================================================================================================================================================
+// POST
+// ========================================================================================================================================================
 // Get Recent Posts
 app.get("/posts/recent", async (req, res) => {
     try {
@@ -677,7 +700,9 @@ app.delete("/posts/:id", async(req, res) => {
     };
 });
 
-// LIKE ===================================================================================================================================================
+// ========================================================================================================================================================
+// LIKE
+// ========================================================================================================================================================
 // Like a Post
 app.post("/posts/:id/like", async (req, res) => {
     try {
@@ -727,7 +752,9 @@ app.delete("/posts/:id/like", async (req, res) => {
     };
 });
 
-// SAVE ===================================================================================================================================================
+// ========================================================================================================================================================
+// SAVE
+// ========================================================================================================================================================
 // Save a Post
 app.post("/posts/:id/save", async (req, res) => {
     try {
@@ -775,7 +802,9 @@ app.delete("/posts/:id/save", async (req, res) => {
     };
 });
 
-// FILE UPLOAD ============================================================================================================================================
+// ========================================================================================================================================================
+// FILE
+// ========================================================================================================================================================
 // Static file hosting for upload
 // Any file in /uploads is accessible at http://localhost:4000/uploads/<filename>
 app.use("/uploads", express.static("uploads")); 
