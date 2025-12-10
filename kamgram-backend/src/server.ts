@@ -303,8 +303,39 @@ app.get("/users", async (req, res) => {
     } catch (error) {
         console.error("Error in GET /users:", error);
         return res.status(500).json({ error: "Internal server error"} );
-    }
-})
+    };
+});
+
+// Get User by Id
+app.get("/users/:id", async (req, res) => {
+    try {
+        const authUser = await getAuthUser(req);
+        if(!authUser) return res.status(401).json({ error: "Not authenticated" });
+
+        const { id } = req.params;
+
+        const user = await prisma.user.findUnique({
+            where: { id },
+            select: {
+                id: true,
+                name: true,                
+                username: true,
+                email: true,
+                imageUrl: true,
+                bio: true,
+            },
+        });
+
+        if(!user) { 
+            return res.status(404).json({ error: "User not found" }) 
+        };
+
+        return res.json({ user });
+    } catch (error) {
+        console.error("Error in GET /users/:id", error);
+        return res.status(500).json({ error: "Internal server error" });
+    };
+});
 
 // ========================================================================================================================================================
 // POST
