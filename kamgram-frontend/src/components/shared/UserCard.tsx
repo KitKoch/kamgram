@@ -1,14 +1,14 @@
-import { Models } from "appwrite";
+import type { IUser } from "@/types";
 import { Link } from "react-router-dom";
 import { Button } from "../ui/button";
 
 type UserCardProps = {
-    user: Models.Document;
+    user: IUser;
 }
 
 const UserCard = ({ user }: UserCardProps) => {
   return (
-    <Link to={`/profile/${user.$id}`} className="user-card bg-yellow-700">
+    <Link to={`/profile/${user.id}`} className="user-card bg-yellow-700">
         <img 
             src={user.imageUrl || "/assets/icons/profile-placeholder.svg"}
             alt="creator"

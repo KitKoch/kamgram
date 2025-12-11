@@ -28,7 +28,7 @@ import { INewUser, INewPost, IUpdatePostBackend, IUpdateMe } from '@/types';
 import { QUERY_KEYS } from './queryKeys';
 
 // ========================================================================================================================================================
-//AUTH QUERIES 
+// AUTH QUERIES 
 // ========================================================================================================================================================
 export const useCreateUserAccount = () => {
     return useMutation({
@@ -53,7 +53,7 @@ export const useSignOutAccount = () => {
 };
 
 // ========================================================================================================================================================
-//POST QUERIES 
+// POST QUERIES 
 // ========================================================================================================================================================
 export const useCreatePost = () => {
     const queryClient = useQueryClient();
@@ -142,10 +142,12 @@ export const useDeletePost = () => {
     });
 };
 
+//useInfiniteQuery is react built in hook for infinite scroll, it will fetch the next page of data when the user scrolls to the bottom of the page
 export const useGetPosts = () => {
   return useInfiniteQuery(
     [QUERY_KEYS.GET_INFINITE_POSTS],
-    ({ pageParam = null }) => getInfinitePostsBackend(pageParam ?? undefined, 10), //useInfiniteQuery is react built in hook for infinite scroll, it will fetch the next page of data when the user scrolls to the bottom of the page
+    ({ pageParam = null }) => 
+        getInfinitePostsBackend(pageParam ?? undefined, 10), 
     {
       getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     }
@@ -160,7 +162,7 @@ export const useSearchPosts = (searchTerm: string) => {
     });
 };
 // ========================================================================================================================================================
-//USER QUERIES 
+// USER QUERIES 
 // ========================================================================================================================================================
 
 export const useGetUsers = (limit?: number) => {
