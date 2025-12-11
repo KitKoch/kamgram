@@ -112,6 +112,25 @@ export async function getUsersBackend(limit = 20): Promise<IUser[]> {
     return data.users as IUser[];
 };
 
+// GET USER BY ID ===================================================================================================================
+export async function getUserById(userId: string): Promise<IUser> {
+    const res = await fetch(`${API_URL}/users/${userId}`, {
+        method: "GET",
+        credentials: "include"
+    });
+
+    if(res.status === 404) {
+        throw new Error("User not found");
+    };
+
+    if(!res.ok) {
+        throw new Error("Failed to get user");
+    };
+
+    const data = await res.json();
+    return data.user as IUser;
+};
+
 // ==================================================================================================================================
 // POST QUERIES
 // ==================================================================================================================================
