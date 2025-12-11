@@ -50,7 +50,11 @@ import React from "react";
     tags: string[];         // array of tags like ["backend", "kamgram"]
     createdAt: string;      // ISO date string
     creator: IUser;         // reuse the existing IUser
-  }
+    likeCount?: number;
+    saveCount?: number;
+    isLikedByMe?: boolean;
+    isSavedByMe?: boolean;
+  };
 
   export type IUpdatePostBackend = {
     caption?: string;

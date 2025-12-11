@@ -113,7 +113,7 @@ export async function getUsersBackend(limit = 20): Promise<IUser[]> {
 };
 
 // GET USER BY ID ===================================================================================================================
-export async function getUserById(userId: string): Promise<IUser> {
+export async function getUserByIdBackend(userId: string): Promise<IUser> {
     const res = await fetch(`${API_URL}/users/${userId}`, {
         method: "GET",
         credentials: "include"

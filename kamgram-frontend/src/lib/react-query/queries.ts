@@ -5,10 +5,6 @@ import {
     useInfiniteQuery,
 } from '@tanstack/react-query';
 import { 
-    getUsers,
-    getUserById,
- } from '../appwrite/api';
-import { 
     createUserAccountBackend, 
     getCurrentUserBackend, 
     signInBackend, 
@@ -25,6 +21,8 @@ import {
     getInfinitePostsBackend,
     searchPostsBackend,
     updateMeBackend, 
+    getUsersBackend,
+    getUserByIdBackend,
 } from '../backend/api'; 
 import { INewUser, INewPost, IUpdatePostBackend, IUpdateMe } from '@/types';
 import { QUERY_KEYS } from './queryKeys';
@@ -168,7 +166,7 @@ export const useSearchPosts = (searchTerm: string) => {
 export const useGetUsers = (limit?: number) => {
     return useQuery({
         queryKey: [QUERY_KEYS.GET_USERS],
-        queryFn: () => getUsers(limit),
+        queryFn: () => getUsersBackend(limit ?? 20),
     });
 };
 
@@ -182,7 +180,7 @@ export const useGetCurrentUser = () => {
 export const useGetUserById = (userId: string) => {
     return useQuery({
         queryKey: [QUERY_KEYS.GET_USER_BY_ID, userId],
-        queryFn: () => getUserById(userId),
+        queryFn: () => getUserByIdBackend(userId),
         enabled: !!userId, //When is it going to be automatically refetched? When the userId changes
     });
 };
