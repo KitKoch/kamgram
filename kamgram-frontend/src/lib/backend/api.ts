@@ -94,6 +94,24 @@ export async function signOutBackend(): Promise<void> {
     };
 };
 
+// GET USERS ========================================================================================================================
+export async function getUsersBackend(limit = 20): Promise<IUser[]> {
+    const url = new URL(`${API_URL}/users`);
+    url.searchParams.set("limit", String(limit));
+
+    const res = await fetch(url.toString(), {
+        method: "GET",
+        credentials: "include",
+    });
+
+    if(!res.ok) {
+        throw new Error("Failed to fetch users");
+    };
+
+    const data = await res.json();
+    return data.users as IUser[];
+};
+
 // ==================================================================================================================================
 // POST QUERIES
 // ==================================================================================================================================
