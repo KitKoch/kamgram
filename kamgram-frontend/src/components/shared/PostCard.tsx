@@ -1,11 +1,11 @@
-import { Models } from "appwrite";
 import { Link } from "react-router-dom";
 import { multiFormatDateString } from "@/lib/utils";
 import { useUserContext } from "@/context/AuthContext";
 import PostStats from "./PostStats";
+import { IBackendPost } from "@/types";
 
 type PostCardProps = {
-    post: Models.Document;
+    post: IBackendPost;
 }
 
 const PostCard = ( { post }: PostCardProps) => {
@@ -19,7 +19,7 @@ const PostCard = ( { post }: PostCardProps) => {
     <div className="post-card2">
         <div className="flex-between">
             <div className="flex items-center gap-3">
-                <Link to={`/profile/${post.creator.$id}`}>
+                <Link to={`/profile/${post.creator.id}`}>
                     <img 
                         src={post.creator?.imageUrl || '/assets/icons/profile-placeholder.svg'}
                         alt='creator'
@@ -33,7 +33,7 @@ const PostCard = ( { post }: PostCardProps) => {
                     </p>
                     <div className="flex-center gap-2 text-yellow-100">
                         <p className="subtle-semibold lg:small-regular">
-                            {multiFormatDateString(post.$createdAt)}
+                            {multiFormatDateString(post.createdAt)}
                         </p>
                         -
                         <p className="subtle-semibold lg:small-regular">
@@ -44,8 +44,8 @@ const PostCard = ( { post }: PostCardProps) => {
             </div>
 
             <Link 
-                to={`/update-post/${post.$id}`}
-                className={`${user.id !== post.creator.$id && "hidden"}`}
+                to={`/update-post/${post.id}`}
+                className={`${user.id !== post.creator.id && "hidden"}`}
             >
                 <img src="/assets/icons/edit2.svg" alt="edit" width={20} height={20} />
             </Link>

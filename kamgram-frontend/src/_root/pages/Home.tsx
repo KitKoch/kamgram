@@ -1,7 +1,7 @@
 import Loader from "@/components/shared/Loader";
 import PostCard from "@/components/shared/PostCard";
 import { useGetRecentPosts, useGetUsers } from "@/lib/react-query/queries";
-import { Models } from "appwrite";
+import { IBackendPost } from "@/types";
 
 const Home = () => {
   const { data: posts, isLoading: isPostLoading, isError: isErrorPosts } = useGetRecentPosts();
@@ -30,7 +30,7 @@ const Home = () => {
             <Loader />
           ) : 
           <ul className="flex flex-col flex-1 gap-9 w-full">
-            {posts?.documents.map((post: Models.Document) => (
+            {posts?.map((post: IBackendPost) => (
               <PostCard post={post} key={post.caption} />
             ))}
           </ul>}
