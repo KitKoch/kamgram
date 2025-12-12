@@ -26,4 +26,10 @@ export type PostDTO = {
     saveCount: number;
     isLikedByMe: boolean;
     isSavedByMe: boolean;
+};
+
+export type LikeDTO = {
+    id: string;
+    userId: string;
+    postId: string;
 }
