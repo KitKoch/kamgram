@@ -30,6 +30,6 @@ export type PostDTO = {
 
 export type LikeDTO = {
     id: string;
-    userId: string;
-    postId: string;
+    createdAt: string;
+    user: UserDTO;
 }

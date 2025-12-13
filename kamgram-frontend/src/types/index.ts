@@ -72,6 +72,12 @@ import React from "react";
     bio: string;
   };
 
+  export type ILike = {
+    id: string;
+    createdAt: string;
+    user: IUser;
+  }
+
    export type IUpdateMe = {
     name?: string;
     bio?: string;

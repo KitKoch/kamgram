@@ -505,6 +505,54 @@ app.get("/posts", async (req, res) => {
     };
 });
 
+// Get Like from Post
+app.get("/posts/:id/likes", async(req, res) => {
+    try {
+        const authUser = await getAuthUser(req);
+        if(!authUser) return res.status(401).json({ error: "Not authenticated" });
+
+        const postId = req.params.id;
+
+        const limitParam = req.query.limit as string | undefined;
+        const cursor = req.query.cursor as string | undefined;
+        const limit = limitParam ? Math.min(parseInt(limitParam, 10), 50) : 20;
+
+        // ensure post exists
+        const post = await prisma.post.findUnique({ where: { id: postId } });
+        if(!post) {
+            return res.status(404).json({ error: "Post not found" });
+        };
+        const likes = await prisma.like.findMany({
+            where: { postId },
+            orderBy: { createdAt: "desc" },
+            take: limit + 1,
+            ...(cursor ? { cursor: { id: cursor }, skip: 1} : {}),
+            include: { user: true },
+        });
+
+        const hasNext = likes.length > limit;
+        const page = hasNext ? likes.slice(0, limit) : likes;
+        const nextCursor = hasNext ? page[page.length - 1]?.id : null;
+
+        const mapped = page.map((like) => ({
+            id: like.id,
+            createdAt: like.createdAt.toISOString(),
+            user: {
+                id: like.user.id,
+                name: like.user.name,
+                username: like.user.username,
+                email: like.user.email,
+                imageUrl: like.user.imageUrl ?? "",
+                bio: like.user.bio ?? "",
+            },
+        }));
+        return res.json({ likes: mapped, nextCursor });
+    } catch(error) {
+        console.error("Error in GET /posts/:id/likes:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    };
+});
+
 // Get a Single Post
 app.get("/posts/:id", async(req, res) => {
     try {
