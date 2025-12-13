@@ -265,6 +265,26 @@ export async function deletePostBackend(postId: string): Promise<Boolean> {
     return true as Boolean;
 };
 
+// GET LIKES FROM POST ==============================================================================================================
+export async function getPostLikesBackend(postId: string, cursor?: string, limit = 20) {
+    const url = new URL(`${API_URL}/posts/${postId}/likes`);
+    url.searchParams.set("limit", String(limit));
+    if(cursor) {
+        url.searchParams.set("cursor", cursor);
+    };
+
+    const res = await fetch(url.toString(), {
+        method: "GET",
+        credentials: "include",
+    });
+
+    if(!res.ok) {
+        throw new Error("Failed to fetch posts");
+    };
+
+    return res.json() as Promise<{ likes: ILike[]; nextCursor: string | null }>;
+}
+
 // ==================================================================================================================================
 // LIKE/SAVE QUERIES
 // ==================================================================================================================================
