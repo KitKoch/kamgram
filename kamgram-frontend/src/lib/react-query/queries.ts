@@ -23,6 +23,7 @@ import {
     updateMeBackend, 
     getUsersBackend,
     getUserByIdBackend,
+    getPostLikesBackend,
 } from '../backend/api'; 
 import { INewUser, INewPost, IUpdatePostBackend, IUpdateMe } from '@/types';
 import { QUERY_KEYS } from './queryKeys';
@@ -91,6 +92,18 @@ export const useLikePost = () => {
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_CURRENT_USER] });
         },
     });
+};
+
+export const useGetPostLike = (postId: string) => {
+    return useInfiniteQuery(
+        [QUERY_KEYS.GET_POST_LIKES, postId],
+        ({ pageParam = null }) => 
+            getPostLikesBackend(postId, pageParam ?? undefined, 20),
+        {
+            enabled: !!postId,
+            getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+        },
+    );
 };
 
 export const useSavePost = () => {
