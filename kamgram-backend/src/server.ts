@@ -467,9 +467,12 @@ app.get("/posts", async (req, res) => {
             orderBy: { createdAt: "desc" },
             include: {
                 user: true,
+                likes: {
+                    include: { user: true },
+                    orderBy: { createdAt: "desc" },
+                },
                 _count: { select: { likes: true, saves: true } },
-                likes: { where: { userId: authUser.id } },
-                saves: { where: { userId: authUser.id } },
+                ...(authUser ? { saves: { where: { userId: authUser.id } } } : {}),
             },
         });
 
@@ -477,29 +480,7 @@ app.get("/posts", async (req, res) => {
         const page = hasNext ? posts.slice(0, limit) : posts;
         const nextCursor = hasNext ? page[page.length - 1]?.id : null;
         
-        const mapped = page.map((p) => {
-            const tagList = p.tags ? p.tags.replace(/ /g, "").split(",").filter(Boolean) : [];
-            return {
-                id: p.id,
-                caption: p.caption,
-                imageUrl: p.imageUrl,
-                location: p.location,
-                tags: tagList,
-                createdAt: p.createdAt.toISOString(),
-                creator: {
-                    id: p.user.id,
-                    name: p.user.name,
-                    username: p.user.username,
-                    email: p.user.email,
-                    imageUrl: p.user.imageUrl ?? "",
-                    bio: p.user.bio ?? "",
-                },
-                likeCount: p._count.likes,
-                saveCount: p._count.saves,
-                isLikedByMe: authUser ? (p as any).likes?.length > 0 : false,
-                isSavedByMe: authUser ? (p as any).saves?.length > 0 : false,
-            };
-        });
+        const mapped = page.map((post) => toPostDTO(post, authUser?.id)); 
         return res.json({ posts: mapped, nextCursor });
     } catch(error) {
         console.error("Error in GET/posts:", error);
@@ -567,9 +548,12 @@ app.get("/posts/:id", async(req, res) => {
             where: { id },
             include: { 
                 user: true,
-                likes: authUser ? { where: { userId: authUser.id }} : false,
-                saves: authUser ? { where: { userId: authUser.id }} : false,
+                likes: {
+                    include: { user: true },
+                    orderBy: { createdAt: "desc"},
+                },
                 _count: { select: { likes: true, saves: true }},
+                ...( authUser ? { saves: { where: { userId: authUser.id } } } : {}),
             },
         });
 
@@ -577,29 +561,7 @@ app.get("/posts/:id", async(req, res) => {
             return res.status(404).json({ error: "Post not found" });
         };
 
-        const tagList = p.tags ? p.tags.replace(/ /g, "").split(",").filter(Boolean) : [];
-
-        const post: PostDTO = {
-            id: p.id,
-            caption: p.caption,
-            imageUrl: p.imageUrl,
-            location: p.location,
-            tags: tagList,
-            createdAt: p.createdAt.toISOString(),
-            creator: {
-                id: p.user.id,
-                name: p.user.name,
-                username: p.user.username,
-                email: p.user.email,
-                imageUrl: p.user.imageUrl ?? "",
-                bio: p.user.bio ?? "",
-            },
-            likeCount: p._count.likes,
-            saveCount: p._count.saves,
-            isLikedByMe: authUser ? p.likes.length > 0 : false,
-            isSavedByMe: authUser ? p.saves.length > 0 : false,
-        };
-
+        const post = toPostDTO(p, authUser?.id);
         return res.json({ post });
     } catch (error) {
         console.error("Error in GET /posts/:id :", error);
@@ -637,34 +599,16 @@ app.post("/posts", async (req, res) => {
             },
             include: {
                 user: true,
+                likes: {
+                    include: { user: true },
+                    orderBy: { createdAt: "desc" },
+                },
                 _count: { select: { likes: true, saves: true }},
+                ...(authUser ? { saves: { where: { userId: authUser.id } } } : {}),
             },
         });
 
-        const tagList = created.tags ? 
-        created.tags.replace(/ /g, "").split(",").filter(Boolean) : []; // / /g is RegExp for spaces, so replace space with empty string
-
-        const post: PostDTO = {
-            id: created.id,
-            caption: created.caption,
-            imageUrl: created.imageUrl,
-            location: created.location,
-            tags: tagList,
-            createdAt: created.createdAt.toISOString(),
-            creator: {
-                id: created.user.id,
-                name: created.user.name,
-                username: created.user.username,
-                email: created.user.email,
-                imageUrl: created.user.imageUrl ?? "",
-                bio: created.user.bio ?? "",
-            },
-            likeCount: created._count.likes,
-            saveCount: created._count.saves,
-            isLikedByMe: false,
-            isSavedByMe: false,
-        };
-
+        const post = toPostDTO(created, authUser?.id);
         return res.status(201).json({ post });
     } catch (error) {
         console.error("Error in POST /posts:", error);
@@ -712,33 +656,16 @@ app.patch("/posts/:id", async (req, res) => {
             },
             include: {
                 user: true,
+                likes: {
+                    include: { user: true },
+                    orderBy: { createdAt: "desc" },
+                },
                 _count: { select: { likes: true, saves: true} },
+                ...(authUser ? { saves: { where: { userId: authUser.id } } } : {}),
             },
         });
 
-        const tagList = updated.tags ? updated.tags.replace(/ /g, "").split(",").filter(Boolean) : [];
-
-        const updatedPost: PostDTO = {
-            id: updated.id,
-            caption: updated.caption,
-            imageUrl: updated.imageUrl,
-            location: updated.location,
-            tags: tagList,
-            createdAt: updated.createdAt.toISOString(),
-            creator: {
-                id: updated.user.id,
-                name: updated.user.name,
-                username: updated.user.username,
-                email: updated.user.email,
-                imageUrl: updated.user.imageUrl ?? "",
-                bio: updated.user.bio ?? "",
-            },
-            likeCount: updated._count.likes,
-            saveCount: updated._count.saves,
-            isLikedByMe: false,
-            isSavedByMe: false,
-        };
-
+        const updatedPost = toPostDTO(updated, authUser?.id);
         return res.status(200).json({ post: updatedPost });       
     } catch(error) {
         console.error("Error in PATCH /posts/:id:", error);
