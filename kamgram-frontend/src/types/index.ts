@@ -51,6 +51,7 @@ import React from "react";
     createdAt: string;      // ISO date string
     creator: IUser;         // reuse the existing IUser
     likes: ILike[];
+    likeCount?: number;
     saveCount?: number;
     isLikedByMe?: boolean;
     isSavedByMe?: boolean;

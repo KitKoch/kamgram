@@ -1,39 +1,31 @@
 import { useGetCurrentUser } from "@/lib/react-query/queries";
-import React, { useState, useEffect } from "react";
-import { useDeleteSavedPost, useLikePost, useSavePost } from "@/lib/react-query/queries";
-import { Models } from "appwrite";
+import React, { useState } from "react";
+import { useLikePost, useSavePost } from "@/lib/react-query/queries";
 import { useLocation } from "react-router-dom";
 import { checkIsLiked } from "@/lib/utils";
-import Loader from "./Loader";
+import { IBackendPost} from "@/types";
 
 type PostStatsProps = {
-    post?: Models.Document;
+    post?: IBackendPost;
     userId: string;
 }
 
 const PostStats = ({ post, userId }: PostStatsProps) => {
     const location = useLocation();
-    const likesList = post?.likes ? post.likes.map((user: Models.Document) => user.$id) : [];
-
-    const [likes, setLikes] = useState<string[]>(likesList);
-    const [isSaved, setIsSaved] = useState(false);
-
     const { mutate: likePost } = useLikePost();
-    const { mutate: savePost, isLoading: isSavingPost } = useSavePost();
-    const { mutate: deleteSavedPost, isLoading: isDeletingSaved } = useDeleteSavedPost();
-
+    const { mutate: savePost } = useSavePost();
     const { data: currentUser } = useGetCurrentUser();
 
-    const savedPostRecord = currentUser?.save?.find((record: Models.Document) => record.post.$id === post?.$id);
-
-    useEffect(() => {
-        //setIsSaved(savedPostRecord ? true : false); OR BELOW
-        setIsSaved(!!savedPostRecord); //Check if there is a truly value, if theres a truly value then it will be set to a falsy value and if falsy then truly value
-    }, [currentUser])
+    const likesList = post?.likes ? post.likes.map((like) => like.user.id) : [];
+    const isLiked = post?.isLikedByMe ?? checkIsLiked(likesList, userId);
+    const isSaved = post?.isSavedByMe ?? false;
+    const [likes, setLikes] = useState<string[]>(likesList);
 
     const handleLikePost = (e: React.MouseEvent) => {
         e.stopPropagation(); //if click like then it'll just like and not doing anything further like opening the post from clicking on the post
         
+        if(!post) return;
+
         let newLikes = [...likes];
 
         const hasLiked = newLikes.includes(userId);
@@ -45,23 +37,15 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
         }
 
         setLikes(newLikes);
-        likePost({ postId: post?.$id || '', likesArray: newLikes});
+        likePost({ postId: post.id, shouldLike: !isLiked });
     }
 
     const handleSavePost = (e: React.MouseEvent) => {
         e.stopPropagation(); 
 
-        if(savedPostRecord) {
-            setIsSaved(false);
-            return deleteSavedPost(savedPostRecord.$id);
-        } 
-        // else {
-        //     savePost({ postId: post.$id, userId });
-        //     setIsSaved(true);
-        // }
+        if(!post) return;
 
-        savePost({ postId: post?.$id || '', userId: userId });
-        setIsSaved(true);
+        savePost({ postId: post.id, shouldSave: !isSaved});
     };
 
     const containerStyles = location.pathname.startsWith("/profile") ? "w-full" : "";
@@ -81,14 +65,14 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
         </div>
 
         <div className="flex gap-2">
-            { isSavingPost || isDeletingSaved ? <Loader /> : <img 
+            <img 
                 src={isSaved ? "/assets/icons/saved2.svg" : "/assets/icons/save2.svg"}
                 alt="save"
                 width={20}
                 height={20}
                 onClick={handleSavePost}
                 className="cursor-pointer"
-            /> }
+            /> 
         </div>
     </div>
   )
