@@ -55,6 +55,8 @@ model Like {
   createdAt       DateTime    @default(now())
 
   @@unique([userId, postId])
+  @@index([postId])
+  @@index([userId])
 }
 
 model Save {

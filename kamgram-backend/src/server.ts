@@ -59,6 +59,47 @@ app.get("/health", (_req, res) => {
     res.json({ status: "ok" });
 });
 
+// Helper 1:
+function toUserDTO(u: any) {
+    return {
+        id: u.id,
+        name: u.name,
+        username: u.username,
+        email: u.email,
+        imageUrl: u.imageUrl ?? "",
+        bio: u.bio ?? "",
+    };
+};
+
+// Help 2:
+function toPostDTO(post: any, authUserId?: string) {
+    const tagList = post.tags ? post.tags.replace(/ /g, "").split(",").filter(Boolean) : [];
+
+    const likes = (post.likes ?? []).map((like: any) => ({
+        id: like.id,
+        createdAt: like.createdAt.toISOString(),
+        user: toUserDTO(like.user),
+    }));
+
+    const isLikedByMe = authUserId ? (post.likes ?? []).some((like: any) => like.userId === authUserId) : false;
+    const isSavedByMe = authUserId ? (post.saves ?? []).some((save: any) => save.userId === authUserId) : false;
+
+    return {
+        id: post.id,
+        caption: post.caption,
+        imageUrl: post.imageUrl,
+        location: post.location,
+        tags: tagList,
+        createdAt: post.createdAt.toISOString(),
+        creator: toUserDTO(post.user),
+        likeCount: post._count?.likes ?? likes.length,
+        saveCount: post._count?.saves ?? 0,
+        likes,
+        isLikedByMe,
+        isSavedByMe,
+    };
+};
+
 // Avoid copying token logic => small helper to get logged in user:
 async function getAuthUser(req: express.Request) {
     const token = req.cookies?.kamgram_token as string | undefined;
@@ -352,36 +393,16 @@ app.get("/posts/recent", async (req, res) => {
             take: limit,
             include: { 
                 user: true,
-                likes: authUser ?  { where: { userId: authUser.id } } : false,
-                saves: authUser ? { where: { userId: authUser.id } } : false,
+                likes: {
+                    include: { user: true},
+                    orderBy: { createdAt: "desc"},
+                },
                 _count: { select: { likes: true, saves: true} },
+                ...(authUser ? { saves: { where: { userId: authUser.id } } } : {}),
             },
         });
 
-        const mapped = posts.map<PostDTO>((p) => {
-            const tagList = p.tags ? p.tags.replace(/ /g, "").split(",").filter(Boolean) : [];
-            return {
-                id: p.id,
-                caption: p.caption,
-                imageUrl: p.imageUrl,
-                location: p.location,
-                tags: tagList,
-                createdAt: p.createdAt.toISOString(),
-                creator: {
-                    id: p.user.id,
-                    name: p.user.name,
-                    username: p.user.username,
-                    email: p.user.email,
-                    imageUrl: p.user.imageUrl ?? "",
-                    bio: p.user.bio ?? "",
-                },
-                likeCount: p._count.likes,
-                saveCount: p._count.saves,
-                isLikedByMe: authUser ? p.likes.length > 0 : false,
-                isSavedByMe: authUser ? p.saves.length > 0 : false,
-            };
-        });
-
+        const mapped = posts.map((post) => toPostDTO(post, authUser?.id));
         return res.json({ posts: mapped });
     } catch (error) {
         console.error("Error in GET /posts/recent:", error);
@@ -413,35 +434,16 @@ app.get("/posts/search", async (req, res) => {
             take: 50,
             include: {
                 user: true,
+                likes: {
+                    include: { user: true },
+                    orderBy: { createdAt: "desc" },
+                },
                 _count: { select: { likes: true, saves: true } },
-                likes: { where: { userId: authUser.id } },
-                saves: { where: { userId: authUser.id } },
+                ...(authUser ? { saves: { where: { userId: authUser.id } } } : {}),
             },
         });
 
-        const mapped = posts.map((p) => {
-            const tagList = p.tags ? p.tags.replace(/ /g, "").split(",").filter(Boolean) : [];
-            return {
-                id: p.id,
-                caption: p.caption,
-                imageUrl: p.imageUrl,
-                location: p.location,
-                tags: tagList,
-                createdAt: p.createdAt.toISOString(),
-                creator: {
-                    id: p.user.id,
-                    name: p.user.name,
-                    username: p.user.username,
-                    email: p.user.email,
-                    imageUrl: p.user.imageUrl ?? "",
-                    bio: p.user.bio ?? "",
-                },
-                likeCount: p._count.likes,
-                saveCount: p._count.saves,
-                isLikedByMe: authUser ? (p as any).likes?.length > 0 : false,
-                isSavedByMe: authUser ? (p as any).saves?.length > 0 : false,
-            };
-        });
+        const mapped = posts.map((post) => toPostDTO(post, authUser?.id));
         return res.json({ posts: mapped });
     } catch(error) {
         console.error("Error in GET /posts/search:", error);

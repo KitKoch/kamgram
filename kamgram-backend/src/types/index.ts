@@ -22,6 +22,7 @@ export type PostDTO = {
     tags: string[]; //parse comma separated DB string into array
     createdAt: string; //ISO string
     creator: UserDTO;
+    likes: LikeDTO[];
     likeCount: number;
     saveCount: number;
     isLikedByMe: boolean;
