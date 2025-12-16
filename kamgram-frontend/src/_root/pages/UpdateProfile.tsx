@@ -45,12 +45,10 @@ const UpdateProfile = () => {
 
   const handleUpdate = async (value: z.infer<typeof ProfileValidation>) => {
     const updatedUser = await updateUser({
-      userId: currentUser.$id,
       name: value.name,
       bio: value.bio,
-      file: value.file,
+      // file: value.file,
       imageUrl: currentUser.imageUrl,
-      imageId: currentUser.imageId,
     });
 
     if(!updatedUser) {

@@ -6,16 +6,16 @@ import { IBackendPost } from "@/types";
 const Home = () => {
   const { data: posts, isLoading: isPostLoading, isError: isErrorPosts } = useGetRecentPosts();
 
-  const { data: creators, isLoading: isUserLoading, isError: isErrorCreators } = useGetUsers(10);
+  const { data: creators, isLoading: isUserLoading, isError: isErrorCreators } = useGetUsers(20);
 
   if(isErrorPosts || isErrorCreators) {
     return (
       <div className="flex flex-1">
         <div className="home-container">
-          <p className="body-medium text-light-1">Something bad happened</p>
+          <p className="body-medium text-dark-1">Something bad happened</p>
         </div>
         <div className="home-creators">
-          <p className="body-medium text-light-1">Something bad happened</p>
+          <p className="body-medium text-dark-1">Something bad happened</p>
         </div>
       </div>
     )
