@@ -38,35 +38,8 @@ export function AuthProvider ({ children }: {children: React.ReactNode}) {
     const navigate = useNavigate();
     const [user, setUser] = useState<IUser>(INITIAL_USER);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
-    // const checkAuthUser = async () => {
-    //     setIsLoading(true);
-    //     try {
-    //         const currentAccount = await getCurrentUser();
-
-    //         if(currentAccount) {
-    //             setUser({
-    //                 id: currentAccount.$id,
-    //                 name: currentAccount.name,
-    //                 username: currentAccount.username,
-    //                 email: currentAccount.email,
-    //                 imageUrl: currentAccount.imageUrl,
-    //                 bio: currentAccount.bio,
-    //             });
-    //             setIsAuthenticated(true);
-
-    //             return true;
-    //         }
-
-    //         return false;
-    //     } catch (error) {
-    //         console.log(error);
-    //         return false;
-    //     } finally {
-    //         setIsLoading(false);
-    //     }
-    // };
     const checkAuthUser = async () => {
         setIsLoading(true);
         try {
@@ -85,6 +58,7 @@ export function AuthProvider ({ children }: {children: React.ReactNode}) {
         } catch (error) {
             console.log(error);
             setUser(INITIAL_USER);
+            setIsAuthenticated(false);
             return false;
         } finally {
             setIsLoading(false);

@@ -8,7 +8,7 @@ import Loader from '@/components/shared/Loader';
 const RootLayout = () => {
   const { isAuthenticated, isLoading } = useUserContext();
   if(isLoading) return <Loader />;
-  if(!isAuthenticated) return <Navigate to="/sign-in" replace />;
+  if(!isAuthenticated) return <Navigate to="/sign-in" replace />; // Auth guard
   
   return (
     <div className="w-full md:flex">
