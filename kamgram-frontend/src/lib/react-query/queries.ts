@@ -27,6 +27,7 @@ import {
 } from '../backend/api'; 
 import { INewUser, INewPost, IUpdatePostBackend, IUpdateMe } from '@/types';
 import { QUERY_KEYS } from './queryKeys';
+import { useUserContext } from '@/context/AuthContext';
 
 // ========================================================================================================================================================
 // AUTH QUERIES 
@@ -179,9 +180,12 @@ export const useSearchPosts = (searchTerm: string) => {
 // ========================================================================================================================================================
 
 export const useGetUsers = (limit?: number) => {
+    const { isAuthenticated } = useUserContext();
+
     return useQuery({
         queryKey: [QUERY_KEYS.GET_USERS],
         queryFn: () => getUsersBackend(limit ?? 20),
+        enabled: isAuthenticated,
     });
 };
 

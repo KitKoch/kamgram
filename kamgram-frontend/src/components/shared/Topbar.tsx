@@ -2,17 +2,23 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { useSignOutAccount } from '@/lib/react-query/queries';
 import { useEffect } from 'react';
-import { useUserContext } from '@/context/AuthContext';
+import { INITIAL_USER, useUserContext } from '@/context/AuthContext';
+import { useQueryClient } from '@tanstack/react-query';
 
 const Topbar = () => {
 
     const navigate = useNavigate();
-    const { user } = useUserContext(); //To get the id of the currently logged in user
+    const { user } = useUserContext(); // To get the id of the currently logged in user
     const { mutate: signOut, isSuccess } = useSignOutAccount();
+    const queryClient = useQueryClient();
+    const { setUser, setIsAuthenticated } = useUserContext();
 
     useEffect(() => {
         if(isSuccess) {
-            navigate(0);
+            queryClient.clear(); // wipe cached queries
+            setUser(INITIAL_USER); // reset user in context
+            setIsAuthenticated(false); // logging out
+            navigate("/sign-in", { replace: true }); // redirect
         }
     }, [isSuccess])
 
