@@ -7,14 +7,14 @@ import { Textarea } from "../ui/textarea";
 import FileUploader from "../shared/FileUploader";
 import { Input } from "../ui/input";
 import { PostValidation } from "@/lib/validation";
-import { Models } from "appwrite";
 import { useCreatePost, useUpdatePost } from "@/lib/react-query/queries";
 import { useUserContext } from '@/context/AuthContext';
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { IBackendPost } from "@/types";
 
 type PostFormProps = {
-  post?: Models.Document;
+  post?: IBackendPost;
   action: 'Create' | 'Update';
 }
 
@@ -28,46 +28,52 @@ const PostForm = ({ post, action }: PostFormProps) => {
   const form = useForm<z.infer<typeof PostValidation>>({
     resolver: zodResolver(PostValidation),
     defaultValues: {
-      caption: post ? post?.caption : "",
+      caption: post?.caption ?? "",
       file: [],
-      location: post ? post?.location : "",
+      location: post?.location ?? "",
       tags: post ? post.tags.join(',') : "", 
     },
   })
  
   async function onSubmit(values: z.infer<typeof PostValidation>) {
-    if(post && action === "Update") {
-      const updatedPost = await updatePost({
-        ...values,
-        postId: post.$id,
-        imageId: post?.imageId,
-        imageUrl: post?.imageUrl,
-      });
+      try {
+          if(post && action === "Update") {
+          const updatedPost = await updatePost({
+            postId: post.id,
+            payload: {
+              caption: values.caption,
+              location: values.location,
+              tags: values.tags,
+              imageUrl: post.imageUrl ?? "",
+            },
+          });
 
-      if(!updatedPost) {
-        toast({
-          title: "Please try again",
-        })
-      };
+          if(!updatedPost) {
+            toast({
+              title: "Update failed. Please try again",
+            })
+          };
 
-      return navigate(`/posts/${post.$id}`);
-    }
+          return navigate(`/posts/${post.id}`);
+        };
 
-    //No need for else statement because if the action is not update then it will create a new post
-    const newPost = await createPost({
-      ...values,
-      userId: user.id,
-    });
+        //No need for else statement because if the action is not update then it will create a new post
+        const newPost = await createPost({
+          ...values,
+          // userId: user.id, => Backend uses cookie, no need for userId
+        } as any);
 
-    if(!newPost) {
-      toast({
-        title: "Please try again",
-      })
-    }
-    navigate('/');
+        if(!newPost) {
+          toast({
+            title: "Create post failed. Please try again",
+          })
+        }
+        navigate('/');
+    } catch (error) {
+        console.error(error);
+        toast({ title: "Something went wrong..."});
+    };
   };
-
-  console.log(post?.imageUrl); //Test
 
   return (
     <Form {...form}>
@@ -94,7 +100,7 @@ const PostForm = ({ post, action }: PostFormProps) => {
             <FormControl>
               <FileUploader 
                 fieldChange={field.onChange}
-                mediaUrl={post?.imageUrl}
+                mediaUrl={post?.imageUrl ?? ''}
               />
             </FormControl>
             <FormMessage className="shad-form_message"/>
@@ -136,6 +142,7 @@ const PostForm = ({ post, action }: PostFormProps) => {
       <Button 
         type="button" 
         className="shad-button_red"
+        onClick={() => navigate(-1)}
       >
         Cancel
       </Button>
