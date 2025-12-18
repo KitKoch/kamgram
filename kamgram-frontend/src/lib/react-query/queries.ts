@@ -175,10 +175,10 @@ export const useSearchPosts = (searchTerm: string) => {
         enabled: !!searchTerm //When is it going to be automatically refetched? When the search term changes
     });
 };
+
 // ========================================================================================================================================================
 // USER QUERIES 
 // ========================================================================================================================================================
-
 export const useGetUsers = (limit?: number) => {
     const { isAuthenticated } = useUserContext();
 
@@ -193,7 +193,7 @@ export const useGetCurrentUser = () => {
     return useQuery({
         queryKey: [QUERY_KEYS.GET_CURRENT_USER],
         queryFn: getCurrentUserBackend,
-    })
+    });
 };
 
 export const useGetUserById = (userId: string) => {

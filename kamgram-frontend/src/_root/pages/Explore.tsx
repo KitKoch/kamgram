@@ -30,8 +30,10 @@ const Explore = () => {
     )
   };
 
-  const shouldShowSearchResults = searchValue !== '';
-  const shouldShowPosts = !shouldShowSearchResults && posts.pages.every((item) => item.documents.length === 0);
+  const shouldShowSearchResults = searchValue.trim().length > 0;
+  const hasAnyPosts = posts.pages.some((page) => page.posts.length > 0);
+  const shouldShowEndMessage = !shouldShowSearchResults && !hasNextPage && hasAnyPosts;
+  const shouldShowEmptyMessage = !shouldShowSearchResults && !hasAnyPosts;
 
   return (
     <div className='explore-container'>
@@ -74,12 +76,18 @@ const Explore = () => {
             isSearchFetching={isSearchFetching}
             searchedPosts={searchedPosts}
           />
-        ) : shouldShowPosts ? (
-          <p className="text-light-4 mt-10 text-center w-full">End of posts</p>
-        ) : posts.pages.map((item, index) => (
-          <GridPostList key={`page-${index}`} posts={item.documents} />
-        ))
-      }
+        ) : shouldShowEmptyMessage ? (
+          <p className="text-dark-4 mt-10 text-center w-full">No posts yet</p>
+        ) : (
+          <>
+            {posts.pages.map((page, index) => (
+              <GridPostList key={`page-${index}`} posts={page.posts} />
+            ))}
+            { shouldShowEndMessage && (
+              <p className="text-dark-4 mt-10 text-center w-full">End of posts</p>
+            )}
+         </>
+        )}
       </div>
 
       {hasNextPage && !searchValue && 

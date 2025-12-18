@@ -46,6 +46,7 @@ function setAuthCookie(res: express.Response, token: string) {
         sameSite: "lax",
         secure: false, //set true in prod with HTTPS
         maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: "/",
     });
 };
 
@@ -71,7 +72,7 @@ function toUserDTO(u: any) {
     };
 };
 
-// Help 2:
+// Helper 2:
 function toPostDTO(post: any, authUserId?: string) {
     const tagList = post.tags ? post.tags.replace(/ /g, "").split(",").filter(Boolean) : [];
 
@@ -223,6 +224,7 @@ app.post("/auth/logout", (req, res) => {
         httpOnly: true,
         sameSite: "lax",
         secure: false, // true in prod with HTTPS
+        path: "/",
     });
     return res.status(204).end();
 });
