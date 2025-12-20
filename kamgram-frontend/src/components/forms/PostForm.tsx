@@ -12,6 +12,7 @@ import { useUserContext } from '@/context/AuthContext';
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { IBackendPost } from "@/types";
+import { uploadFileBackend } from "@/lib/backend/api";
 
 type PostFormProps = {
   post?: IBackendPost;
@@ -38,20 +39,27 @@ const PostForm = ({ post, action }: PostFormProps) => {
   async function onSubmit(values: z.infer<typeof PostValidation>) {
       try {
           if(post && action === "Update") {
-          const updatedPost = await updatePost({
-            postId: post.id,
-            payload: {
-              caption: values.caption,
-              location: values.location,
-              tags: values.tags,
-              imageUrl: post.imageUrl ?? "",
-            },
+            let imageUrl = post.imageUrl ?? "";
+
+            if(values.file && values.file.length > 0) {
+              imageUrl = await uploadFileBackend(values.file[0]);
+            }
+
+            const updatedPost = await updatePost({
+              postId: post.id,
+              payload: {
+                caption: values.caption,
+                location: values.location,
+                tags: values.tags,
+                imageUrl,
+              },
           });
 
           if(!updatedPost) {
             toast({
               title: "Update failed. Please try again",
             })
+            return;
           };
 
           return navigate(`/posts/${post.id}`);
@@ -66,8 +74,10 @@ const PostForm = ({ post, action }: PostFormProps) => {
         if(!newPost) {
           toast({
             title: "Create post failed. Please try again",
-          })
+          });
+          return;
         }
+        
         navigate('/');
     } catch (error) {
         console.error(error);
