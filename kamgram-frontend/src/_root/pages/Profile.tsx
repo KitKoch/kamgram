@@ -87,7 +87,7 @@ const Profile = () => {
         </div>
       </div>
 
-      {currentUser.$id === user.id && (
+      {currentUser.id === user.id && (
         <div className='flex max-w-5xl w-full'>
           <Link
             to={`/profile/${id}`}
@@ -121,7 +121,7 @@ const Profile = () => {
           index
           element={<GridPostList posts={currentUser.posts} showUser={false} />}
         />
-        {currentUser.$id === user.id && (
+        {currentUser.id === user.id && (
           <Route path="/liked-posts" element={<LikedPosts />} />
         )}
       </Routes>

@@ -461,11 +461,13 @@ app.get("/posts", async (req, res) => {
 
         const limitParam = req.query.limit as string | undefined;
         const cursor = req.query.cursor as string | undefined;
+        const userId = req.query.userId as string | undefined;
         const limit = limitParam ? Math.min(parseInt(limitParam, 10), 50) : 10;
 
         const posts = await prisma.post.findMany({
             take: limit + 1, // one extra post so can detect if theres another page
             ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}), // skip 1 to avoid including the cursor item again
+            ...(userId ? { where: { userId } } : {}),
             orderBy: { createdAt: "desc" },
             include: {
                 user: true,

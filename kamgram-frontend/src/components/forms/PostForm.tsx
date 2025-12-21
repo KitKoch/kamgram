@@ -43,7 +43,7 @@ const PostForm = ({ post, action }: PostFormProps) => {
 
             if(values.file && values.file.length > 0) {
               imageUrl = await uploadFileBackend(values.file[0]);
-            }
+            };
 
             const updatedPost = await updatePost({
               postId: post.id,
@@ -53,14 +53,12 @@ const PostForm = ({ post, action }: PostFormProps) => {
                 tags: values.tags,
                 imageUrl,
               },
-          });
+            });
 
-          if(!updatedPost) {
-            toast({
-              title: "Update failed. Please try again",
-            })
-            return;
-          };
+            if(!updatedPost) {
+              toast({title: "Update failed. Please try again",});
+              return;
+            };
 
           return navigate(`/posts/${post.id}`);
         };
@@ -77,7 +75,7 @@ const PostForm = ({ post, action }: PostFormProps) => {
           });
           return;
         }
-        
+
         navigate('/');
     } catch (error) {
         console.error(error);
