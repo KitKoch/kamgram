@@ -198,6 +198,27 @@ export async function getInfinitePostsBackend(cursor?: string, limit = 10) {
     return res.json() as Promise<{ posts: IBackendPost[]; nextCursor: string | null }>; // { posts, nextCursor }
 };
 
+// GET USER POSTS ===================================================================================================================
+export async function getUserPostsBackend(userId: string, cursor?: string, limit = 10) {
+    const url = new URL(`${API_URL}/posts`);
+    url.searchParams.set("userId", userId);
+    url.searchParams.set("limit", String(limit));
+    if(cursor) {
+        url.searchParams.set("cursor", cursor);
+    };
+
+    const res = await fetch(url.toString(), {
+        method: "GET",
+        credentials: "include",
+    });
+
+    if(!res.ok) {
+        throw new Error("Failed to fetch user's posts");
+    };
+
+    return res.json() as Promise<{ posts: IBackendPost[]; nextCursor: string | null}>;
+}
+
 // SEARCH POSTS =====================================================================================================================
 export async function searchPostsBackend(q: string): Promise<IBackendPost[]> {
     const url = new URL(`${API_URL}/posts/search`);
