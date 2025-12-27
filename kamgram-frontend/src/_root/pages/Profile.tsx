@@ -1,6 +1,6 @@
 import Loader from '@/components/shared/Loader';
 import { useUserContext } from '@/context/AuthContext';
-import { useGetUserById } from '@/lib/react-query/queries';
+import { useGetUserById, useGetUserPosts } from '@/lib/react-query/queries';
 import { useLocation, useParams, Link, Routes, Route, Outlet } from 'react-router-dom'
 import { Button } from '@/components/ui/button';
 import GridPostList from '@/components/shared/GridPostList';
@@ -23,19 +23,27 @@ const StatBlock = ({ value, label } : StatBlockProps) => (
 );
 
 const Profile = () => {
-  const { id } = useParams();
+  const { id = "" } = useParams();
   const { user } = useUserContext();
   const { pathname } = useLocation();
 
-  const { data: currentUser } = useGetUserById(id || "");
+  const { data: currentUser, isLoading: isUserLoading } = useGetUserById(id);
 
-  if(!currentUser) {
+  // Fetch posts for this profile user
+  const { data: postPages, isLoading: isPostsLoading } = useGetUserPosts(id);
+  const posts = postPages?.pages?.flatMap((p) => p.posts) ?? [];
+
+  if(isUserLoading || !currentUser || isPostsLoading) {
     return (
       <div className="flex-center w-full h-full">
         <Loader />
       </div>
     );
   };
+
+  const isMe = user.id === currentUser.id;
+  const isPostTabActive = pathname === `/profile/${id}`;
+  const isLikedTabActive = pathname === `/profile/${id}/liked-posts`;
 
   return (
     <div className='profile-container'>
@@ -55,7 +63,7 @@ const Profile = () => {
             </div>
             
             <div className='flex gap-8 mt-10 items-center justify-center xl:justify-start flex-wrap z-20'>
-              <StatBlock value={currentUser.posts.length} label="Posts" />
+              <StatBlock value={posts.length} label="Posts" />
               <StatBlock value={1000} label="Followers" />
               <StatBlock value={20} label="Following" />
             </div>
@@ -64,10 +72,11 @@ const Profile = () => {
           </div>
 
           <div className='flex justify-center gap-4'>
-            <div className={`${user.id !== currentUser.$id && "hidden"}`}>
+            {/* Edit Profile only for ME */}
+            <div className={`${!isMe && "hidden"}`}>
               <Link 
-                to={`/update-profile/${currentUser.$id}`}
-                className={`h-12 bg-green-800 px-5 text-light-1 flex-center gap-2 rounded-lg ${user.id !== currentUser.$id && "hidden"}`}
+                to={`/update-profile/${currentUser.id}`}
+                className={`h-12 bg-green-800 px-5 text-light-1 flex-center gap-2 rounded-lg ${!isMe && "hidden"}`}
               >
                 <img
                   src={"/assets/icons/edit2.svg"}
@@ -78,7 +87,9 @@ const Profile = () => {
                 <p className='flex whitespace-nowrap small-medium'>Edit Profile</p>
               </Link>
             </div>
-            <div className={`${user.id === id && "hidden"}`}>
+
+            {/* "Follow" hidden on my own profile */}
+            <div className={`${isMe && "hidden"}`}>
               <Button type="button" className="shad-button_primary px-8">
                 Follow
               </Button>
@@ -87,11 +98,12 @@ const Profile = () => {
         </div>
       </div>
 
-      {currentUser.id === user.id && (
+      {/* Tabs */}
+      {isMe && (
         <div className='flex max-w-5xl w-full'>
           <Link
             to={`/profile/${id}`}
-            className={`profile-tab2 rounded-l-lg ${pathname === `profile/${id}` && "!bg-green-700"} text-light-2`}
+            className={`profile-tab2 rounded-l-lg ${isPostTabActive && "!bg-green-700"} text-light-2`}
           >
             <img 
               src={"/assets/icons/posts2.svg"}
@@ -103,7 +115,7 @@ const Profile = () => {
           </Link>
           <Link
             to={`/profile/${id}/liked-posts`}
-            className={`profile-tab2 rounded-r-lg ${pathname === `/profile/${id}/liked-posts` && "!bg-green-700"} text-light-2`}
+            className={`profile-tab2 rounded-r-lg ${isLikedTabActive && "!bg-green-700"} text-light-2`}
           >
             <img 
               src={"/assets/icons/like2.svg"}
@@ -119,10 +131,10 @@ const Profile = () => {
       <Routes>
         <Route 
           index
-          element={<GridPostList posts={currentUser.posts} showUser={false} />}
+          element={<GridPostList posts={posts} showUser={false} />}
         />
-        {currentUser.id === user.id && (
-          <Route path="/liked-posts" element={<LikedPosts />} />
+        {isMe && (
+          <Route path="liked-posts" element={<LikedPosts />} />
         )}
       </Routes>
       <Outlet />
