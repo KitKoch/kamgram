@@ -24,6 +24,7 @@ import {
     getUsersBackend,
     getUserByIdBackend,
     getPostLikesBackend,
+    getUserPostsBackend,
 } from '../backend/api'; 
 import { INewUser, INewPost, IUpdatePostBackend, IUpdateMe } from '@/types';
 import { QUERY_KEYS } from './queryKeys';
@@ -174,6 +175,17 @@ export const useSearchPosts = (searchTerm: string) => {
         queryFn: () => searchPostsBackend(searchTerm),
         enabled: !!searchTerm //When is it going to be automatically refetched? When the search term changes
     });
+};
+
+export const useGetUserPosts = (userId: string) => {
+    return useInfiniteQuery(
+        [QUERY_KEYS.GET_USER_POSTS, userId],
+        ({ pageParam = null }) => getUserPostsBackend(userId, pageParam ?? undefined, 10),
+        {
+            enabled: !!userId,
+            getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+        }
+    );
 };
 
 // ========================================================================================================================================================
