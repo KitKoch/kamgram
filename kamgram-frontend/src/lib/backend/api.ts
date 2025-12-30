@@ -304,7 +304,25 @@ export async function getPostLikesBackend(postId: string, cursor?: string, limit
     };
 
     return res.json() as Promise<{ likes: ILike[]; nextCursor: string | null }>;
-}
+};
+
+// GET MY LIKED POSTS ===============================================================================================================
+export async function getMyLikedPosts(cursor?: string, limit = 20) {
+    const url = new URL(`${API_URL}/users/me/liked`);
+    url.searchParams.set("limit", String(limit));
+    if(cursor) { url.searchParams.set("cursor", cursor) };
+
+    const res = await fetch(url.toString(), {
+        method: "GET",
+        credentials: "include",
+    });
+
+    if(!res.ok) {
+        throw new Error("Failed to fetch liked posts");
+    };
+
+    return res.json() as Promise<{ posts: IBackendPost[]; nextCursor: string | null }>;
+};
 
 // ==================================================================================================================================
 // LIKE/SAVE QUERIES

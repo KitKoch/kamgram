@@ -793,6 +793,23 @@ app.get("/users/me/liked", async (req, res) => {
             },
         });
 
+        /* Sample post
+            {
+                id: "like123",
+                userId: "me",
+                postId: "post123",
+                createdAt: "...",
+                post: {
+                    id: "post123",
+                    caption: "...",
+                    user: { ...author... },
+                    likes: { ...list of users who like it... },
+                    _count: { likes: 42, saves: 3 },
+                    saves: [ ...only my save record if I saved it... ],
+                }
+            }
+        */
+
         const hasNext = myLikedPosts.length > limit;
         const page = hasNext ? myLikedPosts.slice(0, limit) : myLikedPosts;
         const nextCursor = hasNext ? page[page.length - 1]?.id : null;
