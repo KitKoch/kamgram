@@ -25,6 +25,7 @@ import {
     getUserByIdBackend,
     getPostLikesBackend,
     getUserPostsBackend,
+    getMyLikedPosts,
 } from '../backend/api'; 
 import { INewUser, INewPost, IUpdatePostBackend, IUpdateMe } from '@/types';
 import { QUERY_KEYS } from './queryKeys';
@@ -132,6 +133,17 @@ export const useGetPostById = (postId: string) => {
         queryFn: () => getPostByIdBackEnd(postId),
         enabled: !!postId,
     });
+};
+
+export const useGetLikedPosts = () => {
+    return useQuery(
+        [QUERY_KEYS.GET_MY_LIKED_POSTS],
+        ({ pageParam = null}) => 
+            getMyLikedPosts(pageParam ?? undefined, 10),
+        {
+            getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+        },
+    );
 };
 
 export const useUpdatePost = () => {
