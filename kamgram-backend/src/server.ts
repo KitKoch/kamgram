@@ -764,6 +764,48 @@ app.delete("/posts/:id/like", async (req, res) => {
     };
 });
 
+// Get Like Post(s)
+app.get("/users/me/liked", async (req, res) => {
+    try {
+        const authUser = await getAuthUser(req);
+        if(!authUser) {
+            return res.status(401).json({ error: "Not authenticated" });
+        };
+
+        const limitParam = req.query.limit as string | undefined;
+        const cursor = req.query.cursor as string | undefined;
+        const limit = limitParam ? Math.min(parseInt(limitParam, 10), 50) : 10;
+
+        const myLikedPosts = await prisma.like.findMany({
+            take: limit + 1,
+            ...(cursor ? { cursor: { id: cursor }, skip: 1} : {}),
+            where: { userId: authUser.id },
+            orderBy: { createdAt: "desc" },
+            include: {
+                post: {
+                    include: {
+                        user: true,
+                        likes: { include: { user: true }, orderBy: { createdAt: "desc" } },
+                        _count: { select: { likes: true, saves: true } },
+                        saves: { where: { userId: authUser.id } },
+                    },
+                },
+            },
+        });
+
+        const hasNext = myLikedPosts.length > limit;
+        const page = hasNext ? myLikedPosts.slice(0, limit) : myLikedPosts;
+        const nextCursor = hasNext ? page[page.length - 1]?.id : null;
+
+        const posts = page.map((myLikePost) => toPostDTO(myLikePost.post, authUser?.id));
+        return res.json({ posts, nextCursor });
+
+    } catch (error) {
+        console.error("GET /users/me/liked", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 // ========================================================================================================================================================
 // SAVE
 // ========================================================================================================================================================
