@@ -135,8 +135,8 @@ export const useGetPostById = (postId: string) => {
     });
 };
 
-export const useGetLikedPosts = () => {
-    return useQuery(
+export const useGetMyLikedPosts = () => {
+    return useInfiniteQuery(
         [QUERY_KEYS.GET_MY_LIKED_POSTS],
         ({ pageParam = null}) => 
             getMyLikedPosts(pageParam ?? undefined, 10),
